@@ -29,6 +29,7 @@ const guardInUse = (field, label) => async (doc) => {
 
 const categoryCrud = crudFactory({
   Model: Category,
+  tags: ['categories'],
   name: 'Category',
   searchFields: ['name', 'slug'],
   slugFrom: 'name',
@@ -50,6 +51,7 @@ const categoryCrud = crudFactory({
 
 const brandCrud = crudFactory({
   Model: Brand,
+  tags: ['brands'],
   name: 'Brand',
   searchFields: ['name', 'slug', 'origin'],
   slugFrom: 'name',
@@ -59,6 +61,7 @@ const brandCrud = crudFactory({
 
 const collectionCrud = crudFactory({
   Model: Collection,
+  tags: ['collections'],
   name: 'Collection',
   searchFields: ['name', 'slug'],
   slugFrom: 'name',

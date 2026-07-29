@@ -3,6 +3,7 @@ const ApiError = require('../utils/ApiError');
 const { ok, created, noContent, paginated } = require('../utils/respond');
 const { parsePagination, paginate, escapeRegex } = require('../utils/query');
 const { toSlug, uniqueSlug } = require('../utils/slug');
+const { revalidateTags } = require('../services/revalidate');
 
 /**
  * Admin CRUD is the same nine lines for most resources: list with search and
@@ -31,7 +32,15 @@ function crudFactory({
   sort = { sortOrder: 1, createdAt: -1 },
   populate = null,
   beforeDelete = null,
+  /**
+   * Storefront cache tags invalidated after any write to this resource. Left
+   * empty for admin-only resources (roles, for instance) that the storefront
+   * never reads.
+   */
+  tags = [],
 }) {
+  /** Called after every successful write; a no-op when tags is empty. */
+  const purge = () => revalidateTags(tags);
   const findOr404 = async (id) => {
     let doc = await Model.findById(id);
     if (!doc) throw ApiError.notFound(name);
@@ -72,6 +81,7 @@ function crudFactory({
     await ensureSlug(req.body);
     const doc = await Model.create(req.body);
     if (populate) await doc.populate(populate);
+    purge();
     return created(res, serialise(doc));
   });
 
@@ -84,6 +94,7 @@ function crudFactory({
     Object.assign(doc, req.body);
     await doc.save();
     if (populate) await doc.populate(populate);
+    purge();
     return ok(res, serialise(doc));
   });
 
@@ -91,6 +102,7 @@ function crudFactory({
     const doc = await findOr404(req.params.id);
     if (beforeDelete) await beforeDelete(doc);
     await doc.deleteOne();
+    purge();
     return noContent(res);
   });
 
@@ -100,6 +112,7 @@ function crudFactory({
       updateOne: { filter: { _id: id }, update: { $set: { sortOrder } } },
     }));
     await Model.bulkWrite(ops);
+    purge();
     return ok(res, { updated: ops.length });
   });
 

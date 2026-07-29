@@ -3,6 +3,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const { ok } = require('../utils/respond');
 const S = require('../services/serialisers');
+const { revalidateTags } = require('../services/revalidate');
 const { applyCoupon, resolveShipping } = require('../services/pricing');
 
 /**
@@ -195,6 +196,8 @@ const updateNav = asyncHandler(async (req, res) => {
     { $set: req.body },
     { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
   );
+
+  revalidateTags(['nav']);
   return ok(res, doc.toJSON());
 });
 
@@ -211,6 +214,9 @@ const updateSettings = asyncHandler(async (req, res) => {
   }
 
   await doc.save();
+
+  // Settings feed the header, footer and SEO defaults on every page.
+  revalidateTags(['settings']);
   return ok(res, doc.toJSON());
 });
 

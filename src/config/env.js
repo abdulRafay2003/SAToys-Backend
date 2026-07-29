@@ -62,6 +62,15 @@ module.exports = {
    */
   storageDriver: (process.env.STORAGE_DRIVER || 'local').toLowerCase(),
 
+  /**
+   * Storefront cache invalidation. Both must be set for the call to happen;
+   * unset simply means the storefront falls back to time-based revalidation.
+   */
+  revalidate: {
+    url: process.env.STOREFRONT_REVALIDATE_URL,
+    secret: process.env.REVALIDATE_SECRET,
+  },
+
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,

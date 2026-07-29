@@ -6,6 +6,7 @@ const { parsePagination, paginate, escapeRegex } = require('../utils/query');
 const { toSlug, uniqueSlug } = require('../utils/slug');
 const S = require('../services/serialisers');
 const catalogue = require('../services/catalogue');
+const { revalidateTags } = require('../services/revalidate');
 
 /** Every image needs a gradient seed, even when a real photo is attached. */
 const withSeeds = (images, slug) =>
@@ -183,6 +184,8 @@ const createProduct = asyncHandler(async (req, res) => {
 
   const doc = await Product.create(body);
   await doc.populate(ADMIN_POPULATE);
+
+  revalidateTags(['products']);
   return created(res, S.product(doc));
 });
 
@@ -199,6 +202,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   await doc.save(); // runs refreshStockStatus and the compareAtPrice guard
   await doc.populate(ADMIN_POPULATE);
 
+  revalidateTags(['products']);
   return ok(res, S.product(doc));
 });
 
@@ -242,6 +246,7 @@ const adjustStock = asyncHandler(async (req, res) => {
   }
 
   await doc.save();
+  revalidateTags(['products']);
   return ok(res, { id: String(doc._id), stock: doc.stock, variants: doc.variants });
 });
 
@@ -254,6 +259,7 @@ const bulkUpdate = asyncHandler(async (req, res) => {
   if (!Object.keys(update).length) throw ApiError.badRequest('Nothing to update');
 
   const result = await Product.updateMany({ _id: { $in: ids } }, { $set: update });
+  revalidateTags(['products']);
   return ok(res, { matched: result.matchedCount, modified: result.modifiedCount });
 });
 

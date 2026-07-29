@@ -5,6 +5,7 @@ const { ok, created, noContent, paginated } = require('../utils/respond');
 const { parsePagination, paginate } = require('../utils/query');
 const { recomputeProductRating } = require('../services/rating');
 const S = require('../services/serialisers');
+const { revalidateTags } = require('../services/revalidate');
 
 const SORTS = {
   recent: { createdAt: -1 },
@@ -187,6 +188,7 @@ const moderate = asyncHandler(async (req, res) => {
 
   const rating = await recomputeProductRating(doc.product);
 
+  revalidateTags(['reviews', 'products']);
   return ok(res, { ...S.review(doc), status: doc.status, productRating: rating });
 });
 
@@ -205,6 +207,7 @@ const moderateMany = asyncHandler(async (req, res) => {
   const byProduct = new Map(reviews.map((r) => [String(r.product), r.product]));
   await Promise.all([...byProduct.values()].map(recomputeProductRating));
 
+  revalidateTags(['reviews', 'products']);
   return ok(res, { updated: ids.length, productsRecomputed: byProduct.size });
 });
 
@@ -216,6 +219,7 @@ const remove = asyncHandler(async (req, res) => {
   await doc.deleteOne();
   await recomputeProductRating(productId);
 
+  revalidateTags(['reviews', 'products']);
   return noContent(res);
 });
 

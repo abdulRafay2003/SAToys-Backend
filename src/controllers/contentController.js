@@ -15,6 +15,7 @@ const S = require('../services/serialisers');
 
 const postCrud = crudFactory({
   Model: BlogPost,
+  tags: ['content'],
   name: 'Post',
   searchFields: ['title', 'slug', 'author', 'topic'],
   slugFrom: 'title',
@@ -24,6 +25,7 @@ const postCrud = crudFactory({
 
 const faqCrud = crudFactory({
   Model: Faq,
+  tags: ['content'],
   name: 'FAQ',
   searchFields: ['question', 'answer'],
   serialise: (d) => ({ ...S.faq(d), sortOrder: d.sortOrder, isPublished: d.isPublished }),
@@ -31,6 +33,7 @@ const faqCrud = crudFactory({
 
 const testimonialCrud = crudFactory({
   Model: Testimonial,
+  tags: ['content'],
   name: 'Testimonial',
   searchFields: ['quote', 'author'],
   serialise: (d) => ({ ...S.testimonial(d), sortOrder: d.sortOrder, isPublished: d.isPublished }),
@@ -38,6 +41,7 @@ const testimonialCrud = crudFactory({
 
 const bannerCrud = crudFactory({
   Model: Banner,
+  tags: ['banners'],
   name: 'Banner',
   searchFields: ['title', 'subtitle'],
   serialise: (d) => ({
@@ -52,6 +56,7 @@ const bannerCrud = crudFactory({
 
 const homeSectionCrud = crudFactory({
   Model: HomeSection,
+  tags: ['home'],
   name: 'Section',
   searchFields: ['name', 'heading'],
   populate: [
@@ -63,6 +68,7 @@ const homeSectionCrud = crudFactory({
 
 const couponCrud = crudFactory({
   Model: Coupon,
+  tags: ['settings'],
   name: 'Coupon',
   searchFields: ['code', 'description'],
   sort: { createdAt: -1 },
@@ -80,6 +86,7 @@ const couponCrud = crudFactory({
 
 const shippingCrud = crudFactory({
   Model: ShippingOption,
+  tags: ['settings'],
   name: 'Delivery option',
   searchFields: ['label', 'key'],
   serialise: (d) => ({ ...S.shippingOption(d), isActive: d.isActive, sortOrder: d.sortOrder }),
