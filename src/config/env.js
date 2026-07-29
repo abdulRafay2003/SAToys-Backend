@@ -53,6 +53,31 @@ module.exports = {
     maxFiles: Number(process.env.UPLOAD_MAX_FILES) || 12,
   },
 
+  /**
+   * Where uploaded images live: 'local' (disk) or 'firebase' (Cloud Storage).
+   *
+   * Defaults to local so the app runs with no credentials. Local disk does not
+   * survive a redeploy on ephemeral hosts, so anything deployed should use
+   * firebase.
+   */
+  storageDriver: (process.env.STORAGE_DRIVER || 'local').toLowerCase(),
+
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    /**
+     * The service-account private key.
+     *
+     * In a .env file the key is one line with literal "\n" sequences, because a
+     * real newline would end the value. Turning them back into newlines here is
+     * the single most common cause of "invalid PEM" errors when this is missed.
+     */
+    privateKey: process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      : undefined,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  },
+
   mail: {
     host: process.env.EMAIL_HOST,
     port: Number(process.env.EMAIL_PORT) || 587,

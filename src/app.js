@@ -10,6 +10,7 @@ const { corsOrigins, isProd } = require('./config/env');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
+const storage = require('./services/storage');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -63,16 +64,26 @@ app.use(
   }),
 );
 
-// Uploaded media. immutable because filenames are content-unique.
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, '..', 'uploads'), {
-    maxAge: isProd ? '30d' : 0,
-    immutable: isProd,
-    // Never let a stray .html in the uploads tree execute in this origin.
-    setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
-  }),
-);
+/**
+ * Uploaded media, served only by the local driver — with Firebase the URLs
+ * point at Cloud Storage and nothing is served from this process. Immutable
+ * because filenames are content-unique.
+ */
+if (storage.name === 'local') {
+  storage.init();
+  app.use(
+    '/uploads',
+    express.static(storage.driver.ROOT, {
+      maxAge: isProd ? '30d' : 0,
+      immutable: isProd,
+      // Never let a stray .html in the uploads tree execute in this origin.
+      setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+    }),
+  );
+} else {
+  // Fail at boot rather than on the first upload if credentials are missing.
+  storage.init();
+}
 
 app.get('/api/health', (req, res) =>
   res.status(200).json({
