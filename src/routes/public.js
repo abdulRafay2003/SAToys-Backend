@@ -28,6 +28,8 @@ router.get('/settings', storefront.settings);
 
 // --- Catalogue ---------------------------------------------------------------
 router.get('/products', validate({ query: productQuery }), product.listPublic);
+// Must precede /products/:slug, or "slugs" is swallowed as a slug.
+router.get('/products/slugs', product.listSlugs);
 router.get('/products/:slug', validate({ params: slugParam }), product.getPublic);
 router.get('/products/:slug/recommendations', validate({ params: slugParam }), product.getRecommendations);
 router.get(

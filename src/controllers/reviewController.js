@@ -45,7 +45,44 @@ const listPublic = asyncHandler(async (req, res) => {
     { sort: SORTS[q.sort] || SORTS.recent, populate: { path: 'product', select: 'slug name' } },
   );
 
-  return paginated(res, { ...result, items: result.items.map(S.review) });
+  const body = { ...result, items: result.items.map(S.review) };
+  let summary;
+
+  /**
+   * `?summary=true` adds the site-wide aggregate the reviews page leads with.
+   *
+   * Computed over every approved review, not over the page being returned —
+   * the average of the 12 most helpful reviews is not the shop's average
+   * rating, and presenting it as one would be a lie.
+   */
+  if (q.summary) {
+    const rows = await Review.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: { _id: '$rating', count: { $sum: 1 } } },
+    ]);
+
+    const distribution = [0, 0, 0, 0, 0];
+    let total = 0;
+    let weighted = 0;
+    for (const row of rows) {
+      const stars = Number(row._id);
+      if (stars >= 1 && stars <= 5) {
+        distribution[stars - 1] = row.count;
+        total += row.count;
+        weighted += stars * row.count;
+      }
+    }
+
+    summary = {
+      total,
+      average: total ? Number((weighted / total).toFixed(2)) : 0,
+      distribution,
+    };
+  }
+
+  // `summary` rides alongside the page rather than inside `data`, which stays
+  // the array of reviews — same envelope shape as every other list endpoint.
+  return paginated(res, body, summary ? { summary } : {});
 });
 
 /**

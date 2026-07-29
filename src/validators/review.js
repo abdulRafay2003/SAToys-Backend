@@ -22,6 +22,8 @@ const reviewQuery = z.object({
   rating: z.coerce.number().int().min(1).max(5).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(12),
+  /** Adds the site-wide rating aggregate to the response. */
+  summary: z.coerce.boolean().optional(),
 });
 
 module.exports = { createReview, moderateReview, reviewQuery };

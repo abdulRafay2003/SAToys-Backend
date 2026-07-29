@@ -109,7 +109,7 @@ const nav = asyncHandler(async (req, res) => {
   return ok(res, {
     primary: byLocation.primary?.links || [],
     shopMega: byLocation['shop-mega']?.columns || [],
-    collectionsPanel: byLocation['collections-panel']?.columns || [],
+    collectionsPanel: byLocation['collections-panel']?.links || [],
     footer: byLocation.footer?.columns || [],
   });
 });
@@ -173,7 +173,7 @@ const bootstrap = asyncHandler(async (req, res) => {
     nav: {
       primary: byLocation.primary?.links || [],
       shopMega: byLocation['shop-mega']?.columns || [],
-      collectionsPanel: byLocation['collections-panel']?.columns || [],
+      collectionsPanel: byLocation['collections-panel']?.links || [],
       footer: byLocation.footer?.columns || [],
     },
     settings: S.settings(settingsDoc),

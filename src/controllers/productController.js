@@ -30,6 +30,28 @@ const listPublic = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * GET /products/slugs — every live product slug and its last-modified date.
+ *
+ * For the storefront's sitemap. Kept separate from the listing so a sitemap
+ * build does not pull whole product documents it will never render; this is a
+ * lean projection over an index.
+ *
+ * Declared before `/products/:slug` in the router, otherwise "slugs" would be
+ * captured as a slug.
+ */
+const listSlugs = asyncHandler(async (req, res) => {
+  const docs = await Product.find({ status: 'active' })
+    .select('slug updatedAt')
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  return ok(
+    res,
+    docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt })),
+  );
+});
+
 /** GET /products/:slug */
 const getPublic = asyncHandler(async (req, res) => {
   const doc = await catalogue.findBySlug(req.params.slug);
@@ -271,6 +293,7 @@ const inventory = asyncHandler(async (req, res) => {
 
 module.exports = {
   listPublic,
+  listSlugs,
   getPublic,
   getRecommendations,
   suggestions,
