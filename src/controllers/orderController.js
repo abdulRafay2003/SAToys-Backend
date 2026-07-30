@@ -82,6 +82,12 @@ const create = asyncHandler(async (req, res) => {
       estimatedMaxDays: shippingOption?.maxDays ?? null,
     },
     billingAddress: body.billingAddress || null,
+    /**
+     * Cash on delivery: the order is a real commitment but no money has moved,
+     * so it stays `unpaid` until an admin marks it paid on collection. That is
+     * exactly the `pending → paid` transition the admin already offers.
+     */
+    payment: { method: body.paymentMethod || 'cod', status: 'unpaid' },
     giftWrap: Boolean(body.giftWrap),
     giftNote: body.giftNote || null,
     customerNote: body.customerNote || null,
@@ -123,8 +129,9 @@ const create = asyncHandler(async (req, res) => {
 
   sendEmail({
     to: doc.email,
-    subject: `Your LUMO order ${doc.orderNumber}`,
+    subject: `Your SA Toys order ${doc.orderNumber}`,
     html: `<p>Thanks — we have your order.</p>
+           <p>Payment: <strong>Cash on delivery</strong></p>
            <p>Order number: <strong>${doc.orderNumber}</strong></p>
            <p>Total: <strong>Rs ${(doc.totals.grandTotal / 100).toLocaleString('en-PK')}</strong></p>`,
   }).catch(() => {});

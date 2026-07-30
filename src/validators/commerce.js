@@ -72,6 +72,11 @@ const createOrder = z.object({
   shippingAddress: address,
   billingAddress: address.optional().nullable(),
   shippingOptionKey: z.string().trim().min(1),
+  /**
+   * Only cash on delivery for now. An enum rather than a free string so adding
+   * a gateway later is a deliberate change here, not an accident at a caller.
+   */
+  paymentMethod: z.enum(['cod']).default('cod'),
   couponCode: z.string().trim().optional().nullable(),
   giftWrap: z.boolean().optional(),
   giftNote: z.string().trim().max(500).optional().nullable(),
