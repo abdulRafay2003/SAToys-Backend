@@ -51,15 +51,18 @@ disappear. That is the reason the Firebase driver exists.
 
 ### The private key
 
-`FIREBASE_PRIVATE_KEY` must be wrapped in double quotes and keep its literal
-`\n` sequences:
+In a **`.env` file**, wrap it in double quotes and keep the literal `\n`
+sequences — dotenv strips the quotes and expands them:
 
 ```
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEv...\n-----END PRIVATE KEY-----\n"
 ```
 
-A real newline would terminate the value and produce an `invalid PEM formatted
-message` error at boot. `src/config/env.js` converts the `\n` back.
+In a **host dashboard** (Render, Vercel, Fly) do **not** include the quotes:
+the field is stored verbatim, so they end up inside the value.
+
+`src/config/env.js` normalises both forms, plus real newlines pasted into a
+multi-line field, so any reasonable paste works.
 
 ## How images are made public
 

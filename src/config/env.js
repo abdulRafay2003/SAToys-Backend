@@ -24,6 +24,39 @@ if (process.env.JWT_SECRET.length < 32) {
 const toList = (value, fallback) =>
   (value ? value.split(',') : fallback).map((s) => s.trim()).filter(Boolean);
 
+/**
+ * Accepts a service-account private key in any of the forms it arrives in.
+ *
+ * The same key reaches this process three different ways, and only one of them
+ * needs no work:
+ *
+ *   • `.env` file, double-quoted — dotenv strips the quotes and expands `\n`.
+ *   • Host dashboard (Render, Vercel, Fly) — the field is stored verbatim, so
+ *     any quotes you pasted become *literal characters* in the value and the
+ *     `\n` stays a backslash and an n. Both have to be undone here, or the PEM
+ *     parser fails with `DECODER routines::unsupported`, which names neither
+ *     cause.
+ *   • Already-real newlines — pasted into a multi-line field. Left alone.
+ *
+ * Normalising all three is what makes the key survive however it was entered.
+ */
+function normalisePrivateKey(raw) {
+  if (!raw) return undefined;
+
+  let key = raw.trim();
+
+  // Quotes a dashboard stored literally, rather than as string delimiters.
+  const quoted =
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"));
+  if (quoted) key = key.slice(1, -1);
+
+  // Escaped newlines back to real ones. A no-op when they are already real.
+  key = key.replace(/\\n/g, '\n');
+
+  return key.trim() + '\n';
+}
+
 module.exports = {
   env: process.env.NODE_ENV || 'development',
   isProd: process.env.NODE_ENV === 'production',
@@ -81,9 +114,7 @@ module.exports = {
      * real newline would end the value. Turning them back into newlines here is
      * the single most common cause of "invalid PEM" errors when this is missed.
      */
-    privateKey: process.env.FIREBASE_PRIVATE_KEY
-      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-      : undefined,
+    privateKey: normalisePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   },
 

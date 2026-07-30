@@ -98,9 +98,14 @@ reaches the API, and the panel shows a generic network error with nothing in the
 server logs. That is almost always what has gone wrong.
 
 Setting the private key in a host's environment UI: paste it as a single line
-with literal `\n`, wrapped in double quotes. A real newline truncates the value
-and the API refuses to boot with an `invalid PEM` error — which is deliberate,
-so you find out at deploy time rather than on the first upload.
+with its literal `\n` sequences, **without** surrounding quotes. A dashboard
+stores the field verbatim, so quotes become literal characters inside the value
+and the PEM parser rejects it.
+
+The config layer normalises all the usual forms anyway — quoted or not, escaped
+`\n` or real newlines — so a paste that is close enough will work. If it is
+genuinely malformed the API refuses to boot and says which part is wrong,
+rather than surfacing Firebase's opaque `DECODER routines::unsupported`.
 
 ## 3. Admin environment — note this is build-time
 

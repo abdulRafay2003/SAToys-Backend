@@ -37,6 +37,27 @@ function init() {
   }
 
   /**
+   * Check the key looks like a PEM before handing it to the SDK.
+   *
+   * Firebase's own failure for a malformed key is
+   * `error:1E08010C:DECODER routines::unsupported`, which says nothing about
+   * what is actually wrong or how the value got mangled. This names it.
+   */
+  if (!privateKey.includes('-----BEGIN') || !privateKey.includes('-----END')) {
+    throw new Error(
+      'FIREBASE_PRIVATE_KEY does not look like a PEM key — the BEGIN/END markers are missing. ' +
+        'Copy the `private_key` field from the service-account JSON verbatim.',
+    );
+  }
+
+  if (!privateKey.includes('\n')) {
+    throw new Error(
+      'FIREBASE_PRIVATE_KEY has no line breaks. Paste it with its literal \\n sequences ' +
+        'intact (and no surrounding quotes when using a host dashboard).',
+    );
+  }
+
+  /**
    * The modular entry points, not the `admin.*` namespace: firebase-admin v13
    * removed `admin.apps`, so the old `if (!admin.apps.length)` guard threw on
    * the first call rather than initialising.
