@@ -4,17 +4,31 @@ Three services deploy separately: the API, the admin panel, and the storefront.
 Image upload touches all three, and the failure modes are mostly configuration
 rather than code — this is the order that avoids them.
 
-## 0. Choose a host for the API that is not serverless
+## 0. Topology
+
+| Service | Host | Why |
+|---|---|---|
+| API | **Render** (web service) | Long-lived Node process; multipart uploads need it |
+| Storefront | **Vercel** | Next.js, server components |
+| Admin | **Vercel** | Next.js |
 
 Uploads are `multipart/form-data` buffered in memory, up to 5 MB per file and 12
-files per request.
+files per request. **Do not put the API on Vercel or Netlify functions** — they
+cap request bodies at ~4.5 MB and a batch upload fails with an opaque 413 that
+looks like a Firebase problem but is not.
 
-**Do not put this API on Vercel or Netlify functions.** They cap request bodies
-at ~4.5 MB and a batch upload will fail with an opaque 413 that looks like a
-Firebase problem but is not. Use a host that runs a normal long-lived Node
-process: Render, Railway, Fly.io, a VPS, or Cloud Run.
+### Render's free tier spins down
 
-The storefront and admin are Next.js apps and are fine on Vercel.
+A free Render web service sleeps after 15 minutes of inactivity and takes ~50
+seconds to wake. That matters here because the storefront fetches the catalogue
+server-side on Vercel, and Vercel kills a function long before 50s.
+
+The storefront now aborts a catalogue request after 8 seconds
+(`API_TIMEOUT_MS`), so a sleeping API degrades to the page's empty state rather
+than a 504 — but an empty shop is still the wrong thing to show a customer.
+
+If the storefront is public-facing, use Render's Starter plan ($7/month) so the
+service never sleeps. The free tier is fine while you are still building.
 
 If your host puts nginx in front, raise its body limit too — the default of 1 MB
 will reject uploads before Express sees them:
@@ -28,7 +42,11 @@ client_max_body_size 12m;
 Follow [STORAGE.md](./STORAGE.md). You need a project with Cloud Storage
 enabled, a service-account key, and the bucket name.
 
-## 2. API environment
+## 2. API environment (Render)
+
+Deploy via **New → Blueprint** pointed at the backend repo. Render reads
+`render.yaml`, creates the service, and prompts for each secret below — they are
+deliberately not stored in the repo.
 
 ```bash
 NODE_ENV=production

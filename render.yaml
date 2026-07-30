@@ -1,0 +1,58 @@
+# Render blueprint for the LUMO API.
+#
+# Deploy: Render dashboard → New → Blueprint → point at this repo.
+# Render reads this file, creates the service, and prompts for every variable
+# marked `sync: false` — those are secrets and are deliberately not stored here.
+services:
+  - type: web
+    name: lumo-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+
+    # `npm ci` not `npm install` — installs exactly the lockfile, so a deploy
+    # cannot silently pick up a different transitive version than was tested.
+    buildCommand: npm ci
+    startCommand: npm start
+
+    # Render restarts the service if this stops returning 2xx.
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+      # Uploads go to Firebase, not disk. Render's filesystem is ephemeral —
+      # the local driver would lose every image on each deploy.
+      - key: STORAGE_DRIVER
+        value: firebase
+
+      # Secrets: Render prompts for these on first deploy and stores them
+      # encrypted. Never commit real values to this file.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+
+      # Set these after the Vercel deploys exist and their URLs are known.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: STOREFRONT_URL
+        sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: STOREFRONT_REVALIDATE_URL
+        sync: false
+      - key: REVALIDATE_SECRET
+        sync: false
