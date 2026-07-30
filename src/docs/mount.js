@@ -16,7 +16,7 @@ module.exports = function mountDocs(app) {
     '/api/docs',
     swaggerUi.serve,
     swaggerUi.setup(spec, {
-      customSiteTitle: 'LUMO API',
+      customSiteTitle: 'SA Toys API',
       swaggerOptions: { persistAuthorization: true, docExpansion: 'none' },
     }),
   );

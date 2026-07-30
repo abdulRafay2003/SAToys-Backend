@@ -54,7 +54,7 @@ const OrderSchema = new mongoose.Schema(
       tax: money({ default: 0, min: 0 }),
       grandTotal: money({ required: true, min: 0 }),
     },
-    currency: { type: String, default: 'GBP', uppercase: true },
+    currency: { type: String, default: 'PKR', uppercase: true },
 
     /** Snapshot — a coupon later edited or deleted must not alter history. */
     coupon: {
@@ -117,13 +117,17 @@ OrderSchema.index({ user: 1, createdAt: -1 });
 
 /**
  * Human-readable, roughly sortable, and not guessable enough to enumerate:
- * LUMO-<base36 day>-<6 random>. Collision is caught by the unique index.
+ * SATOYS-<base36 day>-<6 random>. Collision is caught by the unique index.
+ *
+ * Only new orders take this prefix. Existing LUMO- numbers are left alone — an
+ * order number is the identifier a customer quotes back to you, so rewriting it
+ * would break every receipt and support thread already in the wild.
  */
 OrderSchema.pre('validate', function preValidate() {
   if (!this.orderNumber) {
     const day = Math.floor(Date.now() / 86_400_000).toString(36).toUpperCase();
     const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
-    this.orderNumber = `LUMO-${day}-${rand}`;
+    this.orderNumber = `SATOYS-${day}-${rand}`;
   }
 });
 

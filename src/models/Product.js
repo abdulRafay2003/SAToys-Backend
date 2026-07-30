@@ -70,7 +70,7 @@ const ProductSchema = new mongoose.Schema(
     compareAtPrice: money({ default: null, min: 0 }),
     /** Internal only — never serialised to the storefront. Powers margin analytics. */
     costPrice: money({ default: null, min: 0, private: true }),
-    currency: { type: String, default: 'GBP', uppercase: true },
+    currency: { type: String, default: 'PKR', uppercase: true },
 
     // --- Media --------------------------------------------------------------
     images: [ImageSchema],

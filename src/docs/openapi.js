@@ -175,12 +175,12 @@ function crudPaths() {
 module.exports = {
   openapi: '3.1.0',
   info: {
-    title: 'LUMO API',
+    title: 'SA Toys API',
     version: '1.0.0',
     description: [
-      'Backs the LUMO storefront (Toys-Website) and admin panel (Toys-Admin).',
+      'Backs the SA Toys storefront (Toys-Website) and admin panel (Toys-Admin).',
       '',
-      '**Money is always an integer in minor units (pence).** `2495` is £24.95.',
+      '**Money is always an integer in minor units (paisa).** `250000` is Rs 2,500.',
       'There are no floating-point amounts anywhere in this API.',
       '',
       'Relations are stored as ObjectIds but serialised as slugs (`brandSlug`,',
@@ -225,7 +225,7 @@ module.exports = {
           collectionSlugs: { type: 'array', items: { type: 'string' } },
           price: { type: 'integer', description: 'Minor units (pence)' },
           compareAtPrice: { type: ['integer', 'null'] },
-          currency: { type: 'string', const: 'GBP' },
+          currency: { type: 'string', const: 'PKR' },
           images: {
             type: 'array',
             minItems: 1,
@@ -297,7 +297,7 @@ module.exports = {
         type: 'object',
         properties: {
           id: { type: 'string' },
-          orderNumber: { type: 'string', example: 'LUMO-EM4-A7X2K9' },
+          orderNumber: { type: 'string', example: 'SATOYS-EM4-A7X2K9' },
           email: { type: 'string' },
           items: { type: 'array', items: { type: 'object' } },
           totals: {

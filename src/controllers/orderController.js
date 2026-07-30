@@ -126,7 +126,7 @@ const create = asyncHandler(async (req, res) => {
     subject: `Your LUMO order ${doc.orderNumber}`,
     html: `<p>Thanks — we have your order.</p>
            <p>Order number: <strong>${doc.orderNumber}</strong></p>
-           <p>Total: <strong>£${(doc.totals.grandTotal / 100).toFixed(2)}</strong></p>`,
+           <p>Total: <strong>Rs ${(doc.totals.grandTotal / 100).toLocaleString('en-PK')}</strong></p>`,
   }).catch(() => {});
 
   return created(res, { ...S.order(doc), _transactional: usedTransaction });

@@ -14,7 +14,7 @@ const SettingsSchema = new mongoose.Schema(
     key: { type: String, default: 'default', unique: true, immutable: true },
 
     site: {
-      name: { type: String, trim: true, default: 'LUMO' },
+      name: { type: String, trim: true, default: 'SA Toys' },
       tagline: { type: String, trim: true, default: '' },
       logo: { type: String, trim: true, default: null },
       favicon: { type: String, trim: true, default: null },
@@ -46,7 +46,7 @@ const SettingsSchema = new mongoose.Schema(
 
     seo: {
       defaultTitle: { type: String, trim: true, default: '' },
-      /** e.g. "%s · LUMO" */
+      /** e.g. "%s · SA Toys" */
       titleTemplate: { type: String, trim: true, default: '%s' },
       defaultDescription: { type: String, trim: true, default: '' },
       ogImage: { type: String, trim: true, default: null },
@@ -54,8 +54,8 @@ const SettingsSchema = new mongoose.Schema(
     },
 
     commerce: {
-      currency: { type: String, trim: true, uppercase: true, default: 'GBP' },
-      currencySymbol: { type: String, trim: true, default: '£' },
+      currency: { type: String, trim: true, uppercase: true, default: 'PKR' },
+      currencySymbol: { type: String, trim: true, default: 'Rs' },
       /** Was FREE_SHIPPING_THRESHOLD, a constant in the storefront. Minor units. */
       freeShippingThreshold: money({ default: 5000, min: 0 }),
       /** Basis points (2000 = 20%), so VAT never becomes a float. */

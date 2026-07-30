@@ -515,7 +515,7 @@ async function run() {
   created.orders.push(order.data?.id);
   check(
     "order number generated",
-    /^LUMO-/.test(order.data?.orderNumber || ""),
+    /^SATOYS-/.test(order.data?.orderNumber || ""),
     order.data?.orderNumber,
   );
   check("totals server-computed", order.data?.totals?.subtotal === 4990);

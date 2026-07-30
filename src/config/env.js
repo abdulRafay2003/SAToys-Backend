@@ -123,7 +123,7 @@ module.exports = {
     port: Number(process.env.EMAIL_PORT) || 587,
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
-    fromName: process.env.EMAIL_FROM_NAME || 'LUMO',
+    fromName: process.env.EMAIL_FROM_NAME || 'SA Toys',
     /** Email is optional in dev — flows degrade to logging the OTP. */
     enabled: Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER),
   },
