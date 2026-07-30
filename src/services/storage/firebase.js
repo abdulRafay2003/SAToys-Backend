@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getStorage } = require('firebase-admin/storage');
 const { firebase } = require('../../config/env');
 const logger = require('../../utils/logger');
 
@@ -35,14 +36,19 @@ function init() {
     );
   }
 
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+  /**
+   * The modular entry points, not the `admin.*` namespace: firebase-admin v13
+   * removed `admin.apps`, so the old `if (!admin.apps.length)` guard threw on
+   * the first call rather than initialising.
+   */
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
       storageBucket,
     });
   }
 
-  bucket = admin.storage().bucket();
+  bucket = getStorage().bucket();
   logger.info('Firebase storage ready', { bucket: storageBucket });
   return bucket;
 }
