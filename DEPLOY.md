@@ -27,8 +27,28 @@ The storefront now aborts a catalogue request after 8 seconds
 (`API_TIMEOUT_MS`), so a sleeping API degrades to the page's empty state rather
 than a 504 — but an empty shop is still the wrong thing to show a customer.
 
-If the storefront is public-facing, use Render's Starter plan ($7/month) so the
-service never sleeps. The free tier is fine while you are still building.
+### Keeping it awake for free
+
+`.github/workflows/keep-alive.yml` pings `/api/health` every 10 minutes, inside
+the 15-minute idle window. Set the repo variable `RENDER_API_URL` (Settings →
+Secrets and variables → Actions → **Variables**) to the Render URL, then run the
+workflow once manually to confirm.
+
+Render's free allowance is 750 instance-hours per month; a service awake 24/7
+uses about 730, so this fits — **for one free service only**. A second free web
+service on the same account would exhaust it.
+
+Two caveats worth knowing:
+
+- GitHub's scheduled workflows are best-effort on free runners and can be
+  delayed by 10+ minutes under load, which occasionally lets the service sleep
+  anyway. A dedicated pinger (cron-job.org, UptimeRobot — both free) fires far
+  more reliably and takes two minutes to set up.
+- GitHub disables scheduled workflows on repositories with no commits for 60
+  days. If the repo goes quiet, the pings stop silently.
+
+If the storefront is genuinely public-facing, Render's Starter plan ($7/month)
+removes the problem outright and is worth it the moment you have customers.
 
 If your host puts nginx in front, raise its body limit too — the default of 1 MB
 will reject uploads before Express sees them:

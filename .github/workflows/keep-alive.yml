@@ -1,0 +1,50 @@
+# Keeps the Render free-tier service from sleeping.
+#
+# Render spins a free web service down after 15 minutes of inactivity and takes
+# roughly 50 seconds to wake — longer than Vercel's function timeout, so the
+# first storefront request after a quiet spell would fail. Pinging inside that
+# window keeps the instance warm.
+#
+# Budget: Render's free tier allows 750 instance-hours per month and a service
+# awake 24/7 uses about 730, so this fits — but only for ONE free service. Add
+# a second and the allowance is gone.
+#
+# /api/health is deliberately the target: it touches neither Mongo nor Firebase,
+# so a ping costs almost nothing.
+name: Keep API awake
+
+on:
+  schedule:
+    # Every 10 minutes, comfortably inside the 15-minute idle window.
+    - cron: "*/10 * * * *"
+  # Lets you confirm it works without waiting for the schedule.
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        env:
+          # Repo → Settings → Secrets and variables → Actions → Variables.
+          # A variable, not a secret: the health URL is not sensitive, and
+          # secrets are masked in logs which makes failures hard to read.
+          API_URL: ${{ vars.RENDER_API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "RENDER_API_URL is not set — add it under Actions → Variables."
+            exit 1
+          fi
+
+          # --max-time 90 because a cold start legitimately takes ~50s; a
+          # shorter timeout would report failure precisely when the ping is
+          # doing its job.
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$API_URL/api/health")
+
+          echo "health → $code"
+          # Any 2xx is fine. A failure here means the service is genuinely down,
+          # which is worth a red run in the Actions tab.
+          case "$code" in
+            2*) exit 0 ;;
+            *)  echo "API did not respond healthily"; exit 1 ;;
+          esac
