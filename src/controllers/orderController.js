@@ -210,9 +210,19 @@ const track = asyncHandler(async (req, res) => {
 /** GET /me/orders */
 const listMine = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.validatedQuery || req.query, 10);
+  /**
+   * Matched on user id *or* email.
+   *
+   * Checkout is guest-first, so most orders are placed before an account
+   * exists and carry `user: null`. Filtering on the id alone would show
+   * "no orders yet" to someone who had just ordered — the same misleading
+   * emptiness this page exists to remove. The email is verified at sign-in,
+   * so matching on it claims only orders the customer can already look up by
+   * email through order tracking.
+   */
   const result = await paginate(
     Order,
-    { user: req.user._id },
+    { $or: [{ user: req.user._id }, { email: req.user.email }] },
     { page, limit, skip },
     { sort: { createdAt: -1 } },
   );
@@ -220,7 +230,12 @@ const listMine = asyncHandler(async (req, res) => {
 });
 
 const getMine = asyncHandler(async (req, res) => {
-  const doc = await Order.findOne({ _id: req.params.id, user: req.user._id });
+  // Same ownership rule as the list: id or verified email, so a guest order
+  // opens rather than 404ing for the person who placed it.
+  const doc = await Order.findOne({
+    _id: req.params.id,
+    $or: [{ user: req.user._id }, { email: req.user.email }],
+  });
   if (!doc) throw ApiError.notFound('Order');
   return ok(res, S.order(doc));
 });

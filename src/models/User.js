@@ -11,7 +11,11 @@ const { AddressSchema } = require('./shared');
  */
 const UserSchema = new mongoose.Schema(
   {
-    firstName: { type: String, trim: true, required: true, maxlength: 60 },
+    /**
+     * Optional because a passwordless account starts as an email and nothing
+     * else — the customer supplies a name later, or at checkout.
+     */
+    firstName: { type: String, trim: true, default: '', maxlength: 60 },
     lastName: { type: String, trim: true, default: '', maxlength: 60 },
     email: {
       type: String,
@@ -29,7 +33,12 @@ const UserSchema = new mongoose.Schema(
      * it; `private: true` strips it from serialisation even when it was loaded.
      * Both, because either alone has a hole.
      */
-    password: { type: String, required: true, minlength: 8, select: false, private: true },
+    /**
+     * Null for accounts created through the email-code flow, which never set
+     * one. `matchesPassword` treats a null hash as "no password login", so an
+     * empty submission cannot authenticate such an account.
+     */
+    password: { type: String, default: null, minlength: 8, select: false, private: true },
 
     role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true, index: true },
 
@@ -63,7 +72,11 @@ UserSchema.pre('save', async function preSave() {
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-UserSchema.methods.matchesPassword = function matchesPassword(candidate) {
+UserSchema.methods.matchesPassword = async function matchesPassword(candidate) {
+  // A passwordless account has no hash to compare against. Returning false
+  // rather than letting bcrypt throw keeps "wrong password" and "this account
+  // has no password" indistinguishable to a caller.
+  if (!this.password || !candidate) return false;
   return bcrypt.compare(candidate, this.password);
 };
 

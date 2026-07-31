@@ -126,9 +126,31 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 /** POST /auth/send-otp — email verification. */
+/**
+ * POST /auth/send-otp — passwordless sign-in, the Shopify model.
+ *
+ * A first-time customer has no account yet, so one is created here rather than
+ * bouncing them to a registration form. The record is an email and nothing
+ * else until they verify; `isEmailVerified` stays false until the code is
+ * confirmed, so an unverified row proves nothing.
+ *
+ * Creating a row per address entered is a mild spam surface, which is why this
+ * route carries the strict limiter (10 per IP per 15 minutes). The response is
+ * identical whether or not the address already existed, so it never reveals
+ * who has an account.
+ */
 const sendOtp = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) return ok(res, { message: 'If that address has an account, a code is on its way.' });
+  const email = String(req.body.email).trim().toLowerCase();
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    const customerRole = await Role.findOne({ slug: 'customer' });
+    user = await User.create({
+      email,
+      role: customerRole?._id || null,
+      isEmailVerified: false,
+    });
+  }
 
   const code = generateOTP();
   user.issueOtp(code);
@@ -137,7 +159,7 @@ const sendOtp = asyncHandler(async (req, res) => {
   if (mail.enabled) {
     await sendEmail({
       to: user.email,
-      subject: `${code} is your LUMO verification code`,
+      subject: `${code} is your SA Toys verification code`,
       html: `<p>Your code is <strong>${code}</strong>. It expires in 10 minutes.</p>`,
     });
   } else {
