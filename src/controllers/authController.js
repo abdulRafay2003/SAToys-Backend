@@ -7,7 +7,7 @@ const generateOTP = require('../utils/generateOTP');
 const sendEmail = require('../utils/sendEmail');
 const logger = require('../utils/logger');
 const S = require('../services/serialisers');
-const { storefrontUrl, adminUrl, mail } = require('../config/env');
+const { storefrontUrl, adminUrl, mail, isProd } = require('../config/env');
 
 const sessionPayload = (user) => ({
   token: generateToken(user._id),
@@ -156,14 +156,37 @@ const sendOtp = asyncHandler(async (req, res) => {
   user.issueOtp(code);
   await user.save({ validateBeforeSave: false });
 
-  if (mail.enabled) {
-    await sendEmail({
-      to: user.email,
-      subject: `${code} is your SA Toys verification code`,
-      html: `<p>Your code is <strong>${code}</strong>. It expires in 10 minutes.</p>`,
-    });
-  } else {
+  /**
+   * Unlike an order confirmation, the code *is* the deliverable.
+   *
+   * sendEmail swallows failures by design — an order must not fail because its
+   * receipt bounced. That is wrong here: telling someone to check their inbox
+   * when nothing was sent leaves them stuck at a form with no way forward and
+   * nothing in the response to explain it. So delivery is checked, and a
+   * failure is reported as one.
+   */
+  if (!mail.enabled) {
+    // Development convenience: no mail configured, so the code goes to the log
+    // and the response says so rather than pretending an email is coming.
     logger.warn('Email is not configured — OTP follows', { email: user.email, code });
+    if (isProd) {
+      throw new ApiError(503, 'Sign-in is unavailable right now. Please try again later.', {
+        code: 'MAIL_NOT_CONFIGURED',
+      });
+    }
+    return ok(res, { message: 'Email is not configured — the code is in the server log.' });
+  }
+
+  const sent = await sendEmail({
+    to: user.email,
+    subject: `${code} is your SA Toys verification code`,
+    html: `<p>Your code is <strong>${code}</strong>. It expires in 10 minutes.</p>`,
+  });
+
+  if (!sent) {
+    throw new ApiError(502, 'We could not send your code. Please try again in a moment.', {
+      code: 'MAIL_SEND_FAILED',
+    });
   }
 
   return ok(res, { message: 'If that address has an account, a code is on its way.' });

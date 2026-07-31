@@ -45,6 +45,19 @@ services:
       - key: FIREBASE_STORAGE_BUCKET
         sync: false
 
+      # Email. Without these the passwordless sign-in cannot deliver its code,
+      # and the API refuses the request rather than claiming one was sent.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: SA Toys
+
       # Set these after the Vercel deploys exist and their URLs are known.
       - key: CORS_ORIGINS
         sync: false
