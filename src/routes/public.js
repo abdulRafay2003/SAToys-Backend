@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const validate = require('../middleware/validate');
 const { optionalAuth } = require('../middleware/auth');
 const { productQuery, slugParam, listQuery } = require('../validators/common');
@@ -69,6 +70,22 @@ router.post('/shipping/estimate', validate({ body: estimateShipping }), storefro
 
 router.post('/orders/quote', optionalAuth, validate({ body: quoteOrder }), order.quote);
 router.post('/orders', optionalAuth, validate({ body: createOrder }), order.create);
-router.get('/orders/track/:orderNumber', order.track);
+/**
+ * Order lookup is a guessing surface: the order number and email together are
+ * the only credential. The blanket limiter allows 300/min, which is plenty of
+ * room to grind; this caps it at 10 attempts per IP per 15 minutes.
+ */
+const trackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { message: 'Too many lookups. Try again in a few minutes.', code: 'RATE_LIMITED' },
+  },
+});
+
+router.get('/orders/track/:orderNumber', trackLimiter, order.track);
 
 module.exports = router;

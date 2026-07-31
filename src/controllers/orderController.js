@@ -185,9 +185,23 @@ const track = asyncHandler(async (req, res) => {
   const q = req.validatedQuery || req.query;
   const doc = await Order.findOne({ orderNumber: req.params.orderNumber.toUpperCase() });
 
-  if (!doc) throw ApiError.notFound('Order');
-  if (!q.email || doc.email !== String(q.email).toLowerCase()) {
-    throw ApiError.forbidden('That email does not match this order');
+  /**
+   * One response for both failures.
+   *
+   * Answering "no such order" differently from "wrong email" tells an attacker
+   * which order numbers exist, which is the first half of reading someone
+   * else's order. The pair is the credential; either half being wrong is the
+   * same answer.
+   */
+  const matches = doc && q.email && doc.email === String(q.email).trim().toLowerCase();
+  if (!matches) {
+    // Constructed directly rather than via ApiError.notFound, which appends
+    // "not found" to whatever it is given and would mangle a full sentence.
+    throw new ApiError(
+      404,
+      'No order found with that number and email. Check both against your confirmation email.',
+      { code: 'NOT_FOUND' },
+    );
   }
 
   return ok(res, S.order(doc));
