@@ -170,7 +170,6 @@ const category = (doc) =>
     id: idOf(doc),
     slug: doc.slug,
     name: doc.name,
-    kind: doc.kind,
     blurb: doc.blurb || '',
     tone: doc.tone,
     ageRange: doc.ageRange ? { min: doc.ageRange.min, max: doc.ageRange.max } : null,
@@ -263,7 +262,6 @@ const shippingOption = (doc) =>
 const coupon = (doc) =>
   doc && {
     code: doc.code,
-    kind: doc.kind,
     value: doc.value,
     description: doc.description || '',
     minSpend: doc.minSpend || 0,
@@ -276,6 +274,7 @@ const banner = (doc) =>
     title: doc.title,
     subtitle: doc.subtitle || '',
     image: doc.image || null,
+    video: doc.video || null,
     href: doc.href || null,
     ctaLabel: doc.ctaLabel || null,
     tone: doc.tone,

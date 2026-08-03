@@ -21,8 +21,6 @@ const IMAGE_TYPES = ['studio', 'lifestyle', 'detail', 'scale'];
 
 const VARIANT_KINDS = ['colour', 'size', 'edition'];
 
-const CATEGORY_KINDS = ['age', 'type', 'interest'];
-
 const FAQ_GROUPS = ['delivery', 'returns', 'safety', 'gifting', 'products'];
 
 const COUPON_KINDS = ['percent', 'fixed', 'free-shipping'];
@@ -92,7 +90,6 @@ module.exports = {
   STOCK_STATUSES,
   IMAGE_TYPES,
   VARIANT_KINDS,
-  CATEGORY_KINDS,
   FAQ_GROUPS,
   COUPON_KINDS,
   PUBLISH_STATUSES,

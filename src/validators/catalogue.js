@@ -99,7 +99,6 @@ const updateProduct = z.object(productBase).partial();
 const createCategory = z.object({
   name: z.string().trim().min(1).max(80),
   slug: slug.optional(),
-  kind: z.enum(C.CATEGORY_KINDS),
   blurb: z.string().trim().max(300).optional(),
   tone: tone.optional(),
   ageRange: ageRange.nullable().optional(),

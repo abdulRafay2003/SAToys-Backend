@@ -38,6 +38,7 @@ const bannerShape = {
   title: z.string().trim().min(1).max(200),
   subtitle: z.string().trim().max(300).optional(),
   image: z.string().trim().nullable().optional(),
+  video: z.string().trim().nullable().optional(),
   href: z.string().trim().nullable().optional(),
   ctaLabel: z.string().trim().max(60).nullable().optional(),
   tone: tone.optional(),

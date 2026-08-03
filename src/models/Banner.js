@@ -15,6 +15,12 @@ const BannerSchema = new mongoose.Schema(
     title: { type: String, trim: true, required: true, maxlength: 200 },
     subtitle: { type: String, trim: true, default: '', maxlength: 300 },
     image: { type: String, trim: true, default: null },
+    /**
+     * An optional video for a hero slide. When set it plays in place of the
+     * image, which is kept as the poster frame and the fallback for anyone on
+     * reduced motion or a connection that cannot afford it.
+     */
+    video: { type: String, trim: true, default: null },
     href: { type: String, trim: true, default: null },
     ctaLabel: { type: String, trim: true, default: null, maxlength: 60 },
     tone: { type: String, enum: TONES, default: 'coral' },

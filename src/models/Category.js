@@ -1,25 +1,24 @@
 const mongoose = require('mongoose');
 const serialise = require('./plugins/serialise');
 const { SeoSchema, AgeRangeSchema } = require('./shared');
-const { TONES, CATEGORY_KINDS } = require('../config/constants');
+const { TONES } = require('../config/constants');
 
 /**
  * Backs `Category` in the storefront Zod, plus the parent/child nesting the
  * admin panel needs.
  *
- * `kind` is retained separately from `parent`: it groups the mega-menu into
- * "By age / By type / By interest" columns, which is a different axis from
- * hierarchy. A child of "Wooden" is still `kind: "type"`.
+ * Categories are a single flat-or-nested list, ordered by `sortOrder`. There
+ * is deliberately no second grouping axis: one taxonomy the shopkeeper
+ * controls is easier to reason about than three that have to agree.
  */
 const CategorySchema = new mongoose.Schema(
   {
     name: { type: String, trim: true, required: true, maxlength: 80 },
     slug: { type: String, trim: true, lowercase: true, required: true, unique: true, index: true },
-    kind: { type: String, enum: CATEGORY_KINDS, required: true, index: true },
     blurb: { type: String, trim: true, default: '', maxlength: 300 },
     tone: { type: String, enum: TONES, default: 'coral' },
 
-    /** Only meaningful when kind === "age". Drives the age filter bands. */
+    /** Optional age guidance shown on the category page. */
     ageRange: { type: AgeRangeSchema, default: null },
 
     parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null, index: true },
