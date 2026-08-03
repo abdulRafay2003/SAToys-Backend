@@ -35,7 +35,8 @@ app.use(
   cors({
     origin(origin, cb) {
       if (!origin || corsOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error(`Origin ${origin} is not allowed`));
+      // Reject quietly — throwing here becomes a 500 and hides the real cause.
+      return cb(null, false);
     },
     credentials: true,
   }),
