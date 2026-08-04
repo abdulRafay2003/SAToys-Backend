@@ -251,7 +251,8 @@ const testimonial = (doc) =>
 
 const shippingOption = (doc) =>
   doc && {
-    id: doc.key,
+    id: idOf(doc),
+    key: doc.key,
     label: doc.label,
     description: doc.description || '',
     price: doc.price,
