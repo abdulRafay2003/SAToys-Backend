@@ -41,9 +41,31 @@ const uploader = multer({
 const single = uploader.single('file');
 const many = uploader.array('files', uploadConfig.maxFiles);
 
+/** Separate instance: a different mimetype allowlist and a much larger size limit. */
+const ALLOWED_VIDEO = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+
+const videoFileFilter = (req, file, cb) => {
+  if (!ALLOWED_VIDEO.has(file.mimetype)) {
+    return cb(ApiError.badRequest(`${file.mimetype} is not an accepted video type`));
+  }
+  cb(null, true);
+};
+
+const videoUploader = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: uploadConfig.maxVideoSizeMb * 1024 * 1024,
+    files: 1,
+  },
+});
+
+const singleVideo = videoUploader.single('file');
+
 module.exports = {
   single,
   many,
+  singleVideo,
   FOLDERS: storage.FOLDERS,
   folderFor: storage.folderFor,
 };

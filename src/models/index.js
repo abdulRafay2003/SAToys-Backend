@@ -11,6 +11,7 @@ module.exports = {
   Review: require('./Review'),
   BlogPost: require('./BlogPost'),
   Faq: require('./Faq'),
+  ContactMessage: require('./ContactMessage'),
   Testimonial: require('./Testimonial'),
   Coupon: require('./Coupon'),
   ShippingOption: require('./ShippingOption'),

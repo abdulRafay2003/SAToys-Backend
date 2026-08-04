@@ -21,7 +21,7 @@ const IMAGE_TYPES = ['studio', 'lifestyle', 'detail', 'scale'];
 
 const VARIANT_KINDS = ['colour', 'size', 'edition'];
 
-const FAQ_GROUPS = ['delivery', 'returns', 'safety', 'gifting', 'products'];
+const FAQ_GROUPS = ['delivery', 'safety', 'gifting', 'products'];
 
 const COUPON_KINDS = ['percent', 'fixed', 'free-shipping'];
 

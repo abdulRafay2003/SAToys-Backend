@@ -99,6 +99,7 @@ function product(doc) {
 
     images: imagesFor(doc),
     hasModel3d: Boolean(doc.hasModel3d),
+    video: doc.video || null,
 
     variants: (doc.variants || []).map((v) => ({
       id: String(v._id || v.id),
@@ -239,6 +240,17 @@ const post = (doc) =>
 
 const faq = (doc) =>
   doc && { id: idOf(doc), question: doc.question, answer: doc.answer, group: doc.group };
+
+const contactMessage = (doc) =>
+  doc && {
+    id: idOf(doc),
+    name: doc.name,
+    email: doc.email,
+    subject: doc.subject || '',
+    message: doc.message,
+    status: doc.status,
+    createdAt: iso(doc.createdAt),
+  };
 
 const testimonial = (doc) =>
   doc && {
@@ -404,6 +416,7 @@ module.exports = {
   review,
   post,
   faq,
+  contactMessage,
   testimonial,
   shippingOption,
   coupon,

@@ -75,6 +75,8 @@ const ProductSchema = new mongoose.Schema(
     // --- Media --------------------------------------------------------------
     images: [ImageSchema],
     hasModel3d: { type: Boolean, default: false },
+    /** An optional product demo video, uploaded from the admin. */
+    video: { type: String, trim: true, default: null },
 
     // --- Options ------------------------------------------------------------
     variants: [VariantSchema],

@@ -23,6 +23,17 @@ const createFaq = z.object({
   isPublished: z.boolean().optional(),
 });
 
+const createContactMessage = z.object({
+  name: z.string().trim().min(1, 'Tell us your name').max(120),
+  email: z.email('Must be a valid email').max(200),
+  subject: z.string().trim().max(200).optional(),
+  message: z.string().trim().min(10, 'A little more detail would help').max(5000),
+});
+
+const updateContactMessageStatus = z.object({
+  status: z.enum(['new', 'read', 'archived']),
+});
+
 const createTestimonial = z.object({
   quote: z.string().trim().min(1).max(500),
   author: z.string().trim().min(1).max(80),
@@ -165,6 +176,8 @@ module.exports = {
   updatePost: createPost.partial(),
   createFaq,
   updateFaq: createFaq.partial(),
+  createContactMessage,
+  updateContactMessageStatus,
   createTestimonial,
   updateTestimonial: createTestimonial.partial(),
   createBanner,

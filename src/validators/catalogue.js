@@ -51,6 +51,7 @@ const productBase = {
 
   images: z.array(image).optional(),
   hasModel3d: z.boolean().optional(),
+  video: z.string().trim().nullable().optional(),
 
   variants: z.array(variant).optional(),
   attributes: z

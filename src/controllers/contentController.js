@@ -1,7 +1,7 @@
-const { BlogPost, Faq, Testimonial, Banner, HomeSection, Coupon, ShippingOption } = require('../models');
+const { BlogPost, Faq, Testimonial, Banner, HomeSection, Coupon, ShippingOption, ContactMessage } = require('../models');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
-const { ok, paginated } = require('../utils/respond');
+const { ok, created, paginated } = require('../utils/respond');
 const { parsePagination, paginate } = require('../utils/query');
 const crudFactory = require('./crudFactory');
 const S = require('../services/serialisers');
@@ -37,6 +37,19 @@ const testimonialCrud = crudFactory({
   name: 'Testimonial',
   searchFields: ['quote', 'author'],
   serialise: (d) => ({ ...S.testimonial(d), sortOrder: d.sortOrder, isPublished: d.isPublished }),
+});
+
+/**
+ * Contact form submissions. Admin-only inbox — no storefront cache tag, and
+ * only list/getOne/update(status)/remove are mounted (see routes/admin.js);
+ * there is nothing to author here, messages only arrive via the public POST.
+ */
+const contactMessageCrud = crudFactory({
+  Model: ContactMessage,
+  name: 'Message',
+  searchFields: ['name', 'email', 'subject', 'message'],
+  sort: { createdAt: -1 },
+  serialise: S.contactMessage,
 });
 
 const bannerCrud = crudFactory({
@@ -141,6 +154,12 @@ const listShippingOptions = asyncHandler(async (req, res) => {
   return ok(res, docs.map(S.shippingOption));
 });
 
+/** POST /contact — the storefront's contact form. */
+const submitContactMessage = asyncHandler(async (req, res) => {
+  const doc = await ContactMessage.create(req.body);
+  return created(res, S.contactMessage(doc));
+});
+
 module.exports = {
   postCrud,
   faqCrud,
@@ -149,10 +168,12 @@ module.exports = {
   homeSectionCrud,
   couponCrud,
   shippingCrud,
+  contactMessageCrud,
   listPosts,
   getPost,
   listFaqs,
   listTestimonials,
   listBanners,
   listShippingOptions,
+  submitContactMessage,
 };

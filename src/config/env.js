@@ -84,6 +84,8 @@ module.exports = {
   upload: {
     maxFileSizeMb: Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 5,
     maxFiles: Number(process.env.UPLOAD_MAX_FILES) || 12,
+    /** Video is a separate, larger limit — a 5MB image cap is unusable for a product clip. */
+    maxVideoSizeMb: Number(process.env.UPLOAD_MAX_VIDEO_SIZE_MB) || 50,
   },
 
   /**

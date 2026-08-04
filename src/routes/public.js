@@ -5,6 +5,7 @@ const { optionalAuth } = require('../middleware/auth');
 const { productQuery, slugParam, listQuery } = require('../validators/common');
 const { reviewQuery, createReview } = require('../validators/review');
 const { validateCoupon, estimateShipping, createOrder, quoteOrder } = require('../validators/commerce');
+const { createContactMessage } = require('../validators/content');
 
 const product = require('../controllers/productController');
 const taxonomy = require('../controllers/taxonomyController');
@@ -63,6 +64,19 @@ router.get('/faqs', content.listFaqs);
 router.get('/testimonials', content.listTestimonials);
 router.get('/banners', content.listBanners);
 router.get('/shipping-options', content.listShippingOptions);
+
+/** Rate-limited: an unauthenticated write endpoint is an open spam invitation otherwise. */
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { message: 'Too many messages. Try again in a few minutes.', code: 'RATE_LIMITED' },
+  },
+});
+router.post('/contact', contactLimiter, validate({ body: createContactMessage }), content.submitContactMessage);
 
 // --- Commerce ----------------------------------------------------------------
 router.post('/coupons/validate', optionalAuth, validate({ body: validateCoupon }), storefront.validateCoupon);

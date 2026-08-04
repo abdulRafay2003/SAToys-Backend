@@ -109,6 +109,18 @@ mountCrud('/shipping-options', 'shipping', content.shippingCrud, {
   update: commerceV.updateShipping,
 });
 
+// Contact inbox — hand-wired rather than mountCrud since there is no create
+// (messages only arrive via the public /contact endpoint) or reorder.
+router.get('/contact-messages', requirePermission('contact:read'), validate({ query: listQuery }), content.contactMessageCrud.list);
+router.get('/contact-messages/:id', requirePermission('contact:read'), validate({ params: idParam }), content.contactMessageCrud.getOne);
+router.patch(
+  '/contact-messages/:id',
+  requirePermission('contact:update'),
+  validate({ params: idParam, body: contentV.updateContactMessageStatus }),
+  content.contactMessageCrud.update,
+);
+router.delete('/contact-messages/:id', requirePermission('contact:delete'), validate({ params: idParam }), content.contactMessageCrud.remove);
+
 // --- Navigation & settings (singletons, so no factory) -----------------------
 router.get('/nav/:location', requirePermission('nav:read'), storefront.getNavAdmin);
 router.put('/nav/:location', requirePermission('nav:update'), validate({ body: contentV.updateNav }), storefront.updateNav);
@@ -140,6 +152,7 @@ router.delete('/roles/:id', requirePermission('role:delete'), validate({ params:
 // --- Uploads -----------------------------------------------------------------
 router.get('/uploads/:folder', requirePermission('upload:read'), uploads.list);
 router.post('/uploads/:folder', requirePermission('upload:create'), upload.single, uploads.uploadOne);
+router.post('/uploads/:folder/video', requirePermission('upload:create'), upload.singleVideo, uploads.uploadOne);
 router.post('/uploads/:folder/batch', requirePermission('upload:create'), upload.many, uploads.uploadMany);
 router.delete('/uploads/:folder/:filename', requirePermission('upload:delete'), uploads.remove);
 
