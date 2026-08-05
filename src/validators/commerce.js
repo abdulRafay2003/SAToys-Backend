@@ -103,6 +103,17 @@ const updateOrderStatus = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
+/**
+ * The admin's payment-status control only ever offers `paid` or `cancelled`
+ * — `unpaid` is the automatic starting state, not something to hand-set back
+ * to, so it is deliberately excluded here even though it is a valid stored
+ * value.
+ */
+const updateOrderPaymentStatus = z.object({
+  status: z.enum(['paid', 'cancelled']),
+  note: z.string().trim().max(500).optional(),
+});
+
 const updateOrderShipping = z.object({
   trackingNumber: z.string().trim().max(120).nullable().optional(),
   carrier: z.string().trim().max(80).nullable().optional(),
@@ -119,5 +130,6 @@ module.exports = {
   createOrder,
   quoteOrder,
   updateOrderStatus,
+  updateOrderPaymentStatus,
   updateOrderShipping,
 };

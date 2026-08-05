@@ -103,7 +103,7 @@ async function applyCoupon(code, subtotal, { userId } = {}) {
     const used = await Order.countDocuments({
       user: userId,
       'coupon.code': doc.code,
-      status: { $nin: ['cancelled'] },
+      'payment.status': { $nin: ['cancelled'] },
     });
     if (used >= doc.perUserLimit) {
       throw ApiError.badRequest('You have already used that code');

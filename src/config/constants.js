@@ -29,28 +29,34 @@ const PUBLISH_STATUSES = ['draft', 'active', 'archived'];
 
 const MODERATION_STATUSES = ['pending', 'approved', 'rejected'];
 
-const ORDER_STATUSES = [
-  'pending',
-  'paid',
-  'processing',
-  'shipped',
-  'delivered',
-  'cancelled',
-  'refunded',
-];
+/**
+ * Fulfillment only. Payment is tracked entirely separately, on `payment.status`
+ * below — an order's fulfillment stage and whether it has been paid for are
+ * independent facts, and conflating them (a "paid" *order status*, a
+ * "cancelled" *order status*) was the thing that made a single flat dropdown
+ * confusing to operate.
+ */
+const ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered'];
 
-/** Which status may follow which. Guards the admin's status dropdown server-side. */
+/** Which status may follow which. Guards the admin's status control server-side. */
 const ORDER_STATUS_TRANSITIONS = {
-  pending: ['paid', 'cancelled'],
-  paid: ['processing', 'cancelled', 'refunded'],
-  processing: ['shipped', 'cancelled', 'refunded'],
-  shipped: ['delivered', 'refunded'],
-  delivered: ['refunded'],
-  cancelled: [],
-  refunded: [],
+  pending: ['processing'],
+  processing: ['shipped'],
+  shipped: ['delivered'],
+  delivered: [],
 };
 
-const PAYMENT_STATUSES = ['unpaid', 'paid', 'failed', 'refunded'];
+/**
+ * `unpaid` is the automatic starting state for a cash-on-delivery order; the
+ * admin's payment-status control only ever asks for `paid` or `cancelled`.
+ */
+const PAYMENT_STATUSES = ['unpaid', 'paid', 'cancelled'];
+
+const PAYMENT_STATUS_TRANSITIONS = {
+  unpaid: ['paid', 'cancelled'],
+  paid: ['cancelled'],
+  cancelled: [],
+};
 
 const BANNER_PLACEMENTS = ['announcement', 'hero', 'promo-strip', 'category-header'];
 
@@ -97,6 +103,7 @@ module.exports = {
   ORDER_STATUSES,
   ORDER_STATUS_TRANSITIONS,
   PAYMENT_STATUSES,
+  PAYMENT_STATUS_TRANSITIONS,
   BANNER_PLACEMENTS,
   HOME_SECTION_TYPES,
   RAIL_SOURCES,

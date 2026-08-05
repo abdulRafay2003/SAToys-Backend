@@ -180,28 +180,13 @@ async function decrementStock(items, session) {
   }
 }
 
-/** GET /orders/track/:orderNumber — no auth; email must match, as a weak secret. */
+/** GET /orders/track/:orderNumber — no auth; the order number alone is the lookup key. */
 const track = asyncHandler(async (req, res) => {
-  const q = req.validatedQuery || req.query;
   const doc = await Order.findOne({ orderNumber: req.params.orderNumber.toUpperCase() });
-
-  /**
-   * One response for both failures.
-   *
-   * Answering "no such order" differently from "wrong email" tells an attacker
-   * which order numbers exist, which is the first half of reading someone
-   * else's order. The pair is the credential; either half being wrong is the
-   * same answer.
-   */
-  const matches = doc && q.email && doc.email === String(q.email).trim().toLowerCase();
-  if (!matches) {
-    // Constructed directly rather than via ApiError.notFound, which appends
-    // "not found" to whatever it is given and would mangle a full sentence.
-    throw new ApiError(
-      404,
-      'No order found with that number and email. Check both against your confirmation email.',
-      { code: 'NOT_FOUND' },
-    );
+  if (!doc) {
+    throw new ApiError(404, 'No order found with that number. Check it against your confirmation email.', {
+      code: 'NOT_FOUND',
+    });
   }
 
   return ok(res, S.order(doc));
@@ -286,8 +271,9 @@ const getAdmin = asyncHandler(async (req, res) => {
 });
 
 /**
- * PATCH /admin/orders/:id/status — guarded by the transition table, so the API
- * refuses a jump the UI should not have offered (delivered → pending).
+ * PATCH /admin/orders/:id/status — fulfillment only (pending → processing →
+ * shipped → delivered). Guarded by the transition table, so the API refuses a
+ * jump the UI should not have offered (delivered → pending).
  */
 const updateStatus = asyncHandler(async (req, res) => {
   const doc = await Order.findById(req.params.id);
@@ -298,8 +284,33 @@ const updateStatus = asyncHandler(async (req, res) => {
     throw ApiError.badRequest(`An order cannot go from "${doc.status}" to "${next}"`);
   }
 
-  // Cancelling or refunding returns stock to the shelf.
-  if (['cancelled', 'refunded'].includes(next) && !['cancelled', 'refunded'].includes(doc.status)) {
+  doc.applyStatus(next, { by: req.user._id, note: req.body.note });
+  await doc.save();
+
+  sendEmail({
+    to: doc.email,
+    subject: `Your SA Toys order ${doc.orderNumber} is now ${next}`,
+    html: `<p>Your order <strong>${doc.orderNumber}</strong> is now <strong>${next}</strong>.</p>`,
+  }).catch(() => {});
+
+  return ok(res, S.order(doc, { includeInternal: true }));
+});
+
+/**
+ * PATCH /admin/orders/:id/payment — independent of fulfillment status. Only
+ * `paid` and `cancelled` are offered; cancelling is what returns stock to the
+ * shelf now, since "cancelled" no longer exists as a fulfillment status.
+ */
+const updatePaymentStatus = asyncHandler(async (req, res) => {
+  const doc = await Order.findById(req.params.id);
+  if (!doc) throw ApiError.notFound('Order');
+
+  const next = req.body.status;
+  if (!doc.canTransitionPaymentTo(next)) {
+    throw ApiError.badRequest(`Payment cannot go from "${doc.payment.status}" to "${next}"`);
+  }
+
+  if (next === 'cancelled' && doc.payment.status !== 'cancelled') {
     await Promise.all(
       doc.items.map((i) =>
         i.product
@@ -309,13 +320,13 @@ const updateStatus = asyncHandler(async (req, res) => {
     );
   }
 
-  doc.applyStatus(next, { by: req.user._id, note: req.body.note });
+  doc.applyPaymentStatus(next);
   await doc.save();
 
   sendEmail({
     to: doc.email,
-    subject: `Your LUMO order ${doc.orderNumber} is now ${next}`,
-    html: `<p>Your order <strong>${doc.orderNumber}</strong> is now <strong>${next}</strong>.</p>`,
+    subject: `Your SA Toys order ${doc.orderNumber} — payment ${next}`,
+    html: `<p>Payment for order <strong>${doc.orderNumber}</strong> is now <strong>${next}</strong>.</p>`,
   }).catch(() => {});
 
   return ok(res, S.order(doc, { includeInternal: true }));
@@ -362,6 +373,7 @@ module.exports = {
   listAdmin,
   getAdmin,
   updateStatus,
+  updatePaymentStatus,
   updateShipping,
   invoice,
 };

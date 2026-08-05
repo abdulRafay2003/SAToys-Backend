@@ -133,6 +133,7 @@ router.get('/orders', requirePermission('order:read'), order.listAdmin);
 router.get('/orders/:id', requirePermission('order:read'), validate({ params: idParam }), order.getAdmin);
 router.get('/orders/:id/invoice', requirePermission('order:read'), validate({ params: idParam }), order.invoice);
 router.patch('/orders/:id/status', requirePermission('order:update'), validate({ params: idParam, body: commerceV.updateOrderStatus }), order.updateStatus);
+router.patch('/orders/:id/payment', requirePermission('order:update'), validate({ params: idParam, body: commerceV.updateOrderPaymentStatus }), order.updatePaymentStatus);
 router.patch('/orders/:id/shipping', requirePermission('order:update'), validate({ params: idParam, body: commerceV.updateOrderShipping }), order.updateShipping);
 
 // --- Customers & staff -------------------------------------------------------

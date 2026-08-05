@@ -1,7 +1,12 @@
 const mongoose = require('mongoose');
 const serialise = require('./plugins/serialise');
 const { money, AddressSchema } = require('./shared');
-const { ORDER_STATUSES, ORDER_STATUS_TRANSITIONS, PAYMENT_STATUSES } = require('../config/constants');
+const {
+  ORDER_STATUSES,
+  ORDER_STATUS_TRANSITIONS,
+  PAYMENT_STATUSES,
+  PAYMENT_STATUS_TRANSITIONS,
+} = require('../config/constants');
 
 /**
  * Line items are a *snapshot*, not a join.
@@ -131,7 +136,7 @@ OrderSchema.pre('validate', function preValidate() {
   }
 });
 
-/** Guards the admin's status dropdown server-side. */
+/** Guards the admin's order-status control server-side. Fulfillment only. */
 OrderSchema.methods.canTransitionTo = function canTransitionTo(next) {
   if (next === this.status) return false;
   return (ORDER_STATUS_TRANSITIONS[this.status] || []).includes(next);
@@ -143,15 +148,19 @@ OrderSchema.methods.applyStatus = function applyStatus(next, { by = null, note =
 
   if (next === 'shipped' && !this.shipping.shippedAt) this.shipping.shippedAt = new Date();
   if (next === 'delivered' && !this.shipping.deliveredAt) this.shipping.deliveredAt = new Date();
+  return this;
+};
+
+/** Guards the admin's payment-status control server-side. */
+OrderSchema.methods.canTransitionPaymentTo = function canTransitionPaymentTo(next) {
+  if (next === this.payment.status) return false;
+  return (PAYMENT_STATUS_TRANSITIONS[this.payment.status] || []).includes(next);
+};
+
+OrderSchema.methods.applyPaymentStatus = function applyPaymentStatus(next) {
+  this.payment.status = next;
+  if (next === 'paid' && !this.payment.paidAt) this.payment.paidAt = new Date();
   if (next === 'cancelled') this.cancelledAt = new Date();
-  if (next === 'refunded') {
-    this.refundedAt = new Date();
-    this.payment.status = 'refunded';
-  }
-  if (next === 'paid') {
-    this.payment.status = 'paid';
-    if (!this.payment.paidAt) this.payment.paidAt = new Date();
-  }
   return this;
 };
 

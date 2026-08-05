@@ -5,12 +5,13 @@ const { ok } = require('../utils/respond');
 /**
  * Dashboard analytics.
  *
- * Cancelled and refunded orders are excluded from every revenue figure — a
- * dashboard that counts refunds as income is worse than no dashboard.
+ * Revenue is defined by payment, not fulfillment — an order counts once it is
+ * actually paid, regardless of what stage it is at, and a cancelled order
+ * (payment.status: 'cancelled') is excluded. Counting a cancellation as income
+ * is worse than no dashboard.
  */
-const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
 const revenueMatch = (from, to) => ({
-  status: { $in: REVENUE_STATUSES },
+  'payment.status': 'paid',
   ...(from || to
     ? { createdAt: { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) } }
     : {}),
