@@ -143,14 +143,24 @@ const estimateShipping = asyncHandler(async (req, res) => {
 
   const options = await ShippingOption.find({ isActive: true }).sort({ sortOrder: 1, price: 1 }).lean();
   const threshold = settingsDoc.commerce.freeShippingThreshold;
+  const qualifiesForFree = threshold > 0 && subtotal >= threshold;
+  const standard = options.find((o) => o.key === 'standard');
+
+  // Qualifying for free shipping only zeroes out standard — a faster option
+  // still costs whatever it costs over standard.
+  const effectivePriceFor = (o) => {
+    if (!qualifiesForFree) return o.price;
+    if (!standard || o.key === standard.key) return 0;
+    return Math.max(0, o.price - standard.price);
+  };
 
   return ok(res, {
     options: options.map((o) => ({
       ...S.shippingOption(o),
-      effectivePrice: threshold > 0 && subtotal >= threshold ? 0 : o.price,
+      effectivePrice: effectivePriceFor(o),
     })),
     freeShippingThreshold: threshold,
-    qualifiesForFree: threshold > 0 && subtotal >= threshold,
+    qualifiesForFree,
     remainingForFree: threshold > 0 ? Math.max(0, threshold - subtotal) : 0,
   });
 });

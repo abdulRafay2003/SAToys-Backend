@@ -133,6 +133,11 @@ async function applyCoupon(code, subtotal, { userId } = {}) {
 /**
  * Shipping cost after the free-shipping threshold and any free-shipping coupon.
  * The threshold lives in Settings, not a constant.
+ *
+ * Qualifying for free shipping makes *standard* delivery free — it does not
+ * make every option free. Picking a faster option still costs whatever it
+ * costs over standard, so "free shipping" can't be used to get express
+ * delivery at no charge.
  */
 async function resolveShipping(optionKey, { subtotalAfterDiscount, freeShipping }) {
   const settings = await Settings.load();
@@ -145,10 +150,20 @@ async function resolveShipping(optionKey, { subtotalAfterDiscount, freeShipping 
 
   const qualifiesFree = freeShipping || (threshold > 0 && subtotalAfterDiscount >= threshold);
 
+  let price = option.price;
+  if (qualifiesFree) {
+    if (option.key === 'standard') {
+      price = 0;
+    } else {
+      const standard = await ShippingOption.findOne({ key: 'standard', isActive: true });
+      price = standard ? Math.max(0, option.price - standard.price) : 0;
+    }
+  }
+
   return {
-    price: qualifiesFree ? 0 : option.price,
+    price,
     option,
-    freeReason: qualifiesFree ? (freeShipping ? 'coupon' : 'threshold') : null,
+    freeReason: qualifiesFree && price === 0 ? (freeShipping ? 'coupon' : 'threshold') : null,
   };
 }
 

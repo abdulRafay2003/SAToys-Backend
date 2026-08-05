@@ -50,7 +50,9 @@ const address = z.object({
   line2: z.string().trim().optional(),
   city: z.string().trim().min(1),
   county: z.string().trim().optional(),
-  postcode: z.string().trim().min(1),
+  // Optional: plenty of Pakistani addresses are delivered on landmarks
+  // rather than a postcode — the storefront's checkout form reflects this.
+  postcode: z.string().trim().optional(),
   country: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   isDefault: z.boolean().optional(),

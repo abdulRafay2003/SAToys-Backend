@@ -71,7 +71,9 @@ const AddressSchema = new mongoose.Schema(
     line2: { type: String, trim: true },
     city: { type: String, trim: true, required: true },
     county: { type: String, trim: true },
-    postcode: { type: String, trim: true, required: true, uppercase: true },
+    // Optional: plenty of Pakistani addresses are delivered on landmarks
+    // rather than a postcode.
+    postcode: { type: String, trim: true, default: '', uppercase: true },
     country: { type: String, trim: true, default: 'United Kingdom' },
     phone: { type: String, trim: true },
     isDefault: { type: Boolean, default: false },
