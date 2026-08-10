@@ -1,27 +1,14 @@
-const nodemailer = require('nodemailer');
 const { mail } = require('../config/env');
 const logger = require('./logger');
 
-/**
- * The transporter is created once. Rebuilding it per message reopens a TLS
- * connection every time, which is slow and trips rate limits on shared SMTP.
- */
-let transporter = null;
-
-const getTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: mail.host,
-      port: mail.port,
-      secure: mail.port === 465,
-      auth: { user: mail.user, pass: mail.pass },
-    });
-  }
-  return transporter;
-};
+const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 
 /**
- * Send an email.
+ * Send an email via Brevo's transactional HTTP API.
+ *
+ * Not SMTP — Render (like most PaaS free tiers) blocks outbound SMTP ports,
+ * which left every send hanging until connection-timeout. A plain HTTPS call
+ * has no such problem.
  *
  * Failures are logged, not thrown: a customer's order should not fail because
  * the confirmation email bounced. Callers that genuinely need delivery
@@ -37,14 +24,32 @@ async function sendEmail({ to, subject, html, text }) {
   }
 
   try {
-    const info = await getTransporter().sendMail({
-      from: `${mail.fromName} <${mail.user}>`,
-      to,
-      subject,
-      html,
-      text: text || String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-    });
-    logger.info('Email sent', { to, subject, id: info.messageId });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    const res = await fetch(BREVO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'api-key': mail.apiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: mail.fromName, email: mail.fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text || String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body?.message || `Brevo responded ${res.status}`);
+    }
+
+    logger.info('Email sent', { to, subject, id: body.messageId });
     return true;
   } catch (error) {
     logger.error('Email failed', { to, subject, error: error.message });

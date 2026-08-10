@@ -121,12 +121,15 @@ module.exports = {
   },
 
   mail: {
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT) || 587,
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    /**
+     * Brevo's transactional HTTP API, not SMTP — Render (and most PaaS free
+     * tiers) block outbound SMTP ports, which made raw Gmail SMTP hang until
+     * connection-timeout on every send. An HTTPS API call has no such problem.
+     */
+    apiKey: process.env.BREVO_API_KEY,
+    fromEmail: process.env.EMAIL_FROM_ADDRESS,
     fromName: process.env.EMAIL_FROM_NAME || 'SA Toys',
     /** Email is optional in dev — flows degrade to logging the OTP. */
-    enabled: Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER),
+    enabled: Boolean(process.env.BREVO_API_KEY && process.env.EMAIL_FROM_ADDRESS),
   },
 };
