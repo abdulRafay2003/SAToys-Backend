@@ -1,3 +1,4 @@
+const sanitizeHtml = require('sanitize-html');
 const { Product, Review, Order } = require('../models');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
@@ -14,6 +15,21 @@ const withSeeds = (images, slug) =>
     ...img,
     seed: img.seed || `${slug}-${i}`,
   }));
+
+/**
+ * The admin's description field is a rich-text editor now, not plain text —
+ * this is the only thing standing between whatever an admin session typed (or
+ * pasted) and `dangerouslySetInnerHTML` on every visitor's browser. Stripped
+ * to exactly the tags the editor can produce; no attributes at all, so a
+ * pasted `<p style=...>` or `onclick` cannot ride along.
+ */
+const sanitizeDescription = (html) =>
+  typeof html === 'string'
+    ? sanitizeHtml(html, {
+        allowedTags: ['p', 'strong', 'em', 'b', 'i', 'ul', 'ol', 'li', 'blockquote', 'br'],
+        allowedAttributes: {},
+      })
+    : html;
 
 // =============================================================================
 // Public
@@ -181,6 +197,7 @@ const createProduct = asyncHandler(async (req, res) => {
   body.slug = await uniqueSlug(Product, toSlug(body.slug || body.name));
   body.images = withSeeds(body.images, body.slug);
   if (body.sku) body.sku = body.sku.toUpperCase();
+  if (body.description !== undefined) body.description = sanitizeDescription(body.description);
 
   const doc = await Product.create(body);
   await doc.populate(ADMIN_POPULATE);
@@ -197,6 +214,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (body.slug) body.slug = await uniqueSlug(Product, toSlug(body.slug), doc._id);
   if (body.images) body.images = withSeeds(body.images, body.slug || doc.slug);
   if (body.sku) body.sku = body.sku.toUpperCase();
+  if (body.description !== undefined) body.description = sanitizeDescription(body.description);
 
   Object.assign(doc, body);
   await doc.save(); // runs refreshStockStatus and the compareAtPrice guard

@@ -7,6 +7,7 @@ const { parsePagination, paginate, escapeRegex } = require('../utils/query');
 const { priceLines, computeTotals } = require('../services/pricing');
 const sendEmail = require('../utils/sendEmail');
 const S = require('../services/serialisers');
+const { storefrontUrl } = require('../config/env');
 
 /**
  * POST /orders/quote — price a basket without committing to it.
@@ -290,11 +291,34 @@ const updateStatus = asyncHandler(async (req, res) => {
   sendEmail({
     to: doc.email,
     subject: `Your SA Toys order ${doc.orderNumber} is now ${next}`,
-    html: `<p>Your order <strong>${doc.orderNumber}</strong> is now <strong>${next}</strong>.</p>`,
+    html:
+      `<p>Your order <strong>${doc.orderNumber}</strong> is now <strong>${next}</strong>.</p>` +
+      (next === 'delivered' ? reviewPromptHtml(doc) : ''),
   }).catch(() => {});
 
   return ok(res, S.order(doc, { includeInternal: true }));
 });
+
+/**
+ * A link per item, straight to that product's write-a-review dialog.
+ *
+ * Sent as part of the delivered-status email rather than a separate delayed
+ * one — there is no job scheduler in this stack to send it a few days later,
+ * and asking right away beats not asking at all.
+ */
+function reviewPromptHtml(order) {
+  const links = order.items
+    .map(
+      (item) =>
+        `<li><a href="${storefrontUrl}/products/${item.slug}?review=1">${item.name}</a></li>`,
+    )
+    .join('');
+
+  return `
+    <p>How did it go? A quick review helps other parents choosing the same toy.</p>
+    <ul>${links}</ul>
+  `;
+}
 
 /**
  * PATCH /admin/orders/:id/payment — independent of fulfillment status. Only
