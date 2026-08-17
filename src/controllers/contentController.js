@@ -76,7 +76,14 @@ const homeSectionCrud = crudFactory({
     { path: 'config.products', select: 'name slug' },
     { path: 'config.collections', select: 'name slug' },
   ],
-  serialise: (d) => d.toJSON?.() ?? d,
+  // The list handler queries with .lean(), which returns plain objects with
+  // no .toJSON() — those fell through to the raw `_id` shape, so every row's
+  // `id` was undefined in the table (edit and delete both target `/undefined`).
+  serialise: (d) => {
+    if (typeof d.toJSON === 'function') return d.toJSON();
+    const { _id, __v, ...rest } = d;
+    return { id: String(_id), ...rest };
+  },
 });
 
 const couponCrud = crudFactory({
