@@ -1,4 +1,4 @@
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -7,22 +7,22 @@ dotenv.config();
  * needs it. A server that boots without JWT_SECRET is a server that issues
  * unverifiable tokens.
  */
-const required = ['MONGODB_URI', 'JWT_SECRET'];
+const required = ["MONGODB_URI", "JWT_SECRET"];
 
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) {
-  console.error(`[config] Missing required env vars: ${missing.join(', ')}`);
-  console.error('[config] Copy .env.example to .env and fill it in.');
+  console.error(`[config] Missing required env vars: ${missing.join(", ")}`);
+  console.error("[config] Copy .env.example to .env and fill it in.");
   process.exit(1);
 }
 
 if (process.env.JWT_SECRET.length < 32) {
-  console.error('[config] JWT_SECRET must be at least 32 characters.');
+  console.error("[config] JWT_SECRET must be at least 32 characters.");
   process.exit(1);
 }
 
 const toList = (value, fallback) =>
-  (value ? value.split(',') : fallback).map((s) => s.trim()).filter(Boolean);
+  (value ? value.split(",") : fallback).map((s) => s.trim()).filter(Boolean);
 
 /**
  * Accepts a service-account private key in any of the forms it arrives in.
@@ -52,34 +52,36 @@ function normalisePrivateKey(raw) {
   if (quoted) key = key.slice(1, -1);
 
   // Escaped newlines back to real ones. A no-op when they are already real.
-  key = key.replace(/\\n/g, '\n');
+  key = key.replace(/\\n/g, "\n");
 
-  return key.trim() + '\n';
+  return key.trim() + "\n";
 }
 
 module.exports = {
-  env: process.env.NODE_ENV || 'development',
-  isProd: process.env.NODE_ENV === 'production',
+  env: process.env.NODE_ENV || "development",
+  isProd: process.env.NODE_ENV === "production",
   port: Number(process.env.PORT) || 5000,
 
   mongoUri: process.env.MONGODB_URI,
 
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRE || '7d',
+    expiresIn: process.env.JWT_EXPIRE || "7d",
   },
 
   /** Storefront and admin both call this API from the browser. */
   corsOrigins: toList(process.env.CORS_ORIGINS, [
-    'http://localhost:3000',
-    'http://localhost:3001',
+    "http://localhost:3000",
+    "http://localhost:3001",
   ]),
 
-  storefrontUrl: process.env.STOREFRONT_URL || 'http://localhost:3000',
-  adminUrl: process.env.ADMIN_URL || 'http://localhost:3001',
+  storefrontUrl: process.env.STOREFRONT_URL || "http://localhost:3000",
+  adminUrl: process.env.ADMIN_URL || "http://localhost:3001",
 
   /** Public base for uploaded files, so responses carry absolute URLs. */
-  publicUrl: process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 5000}`,
+  publicUrl:
+    process.env.PUBLIC_URL ||
+    `http://localhost:${Number(process.env.PORT) || 5000}`,
 
   upload: {
     maxFileSizeMb: Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 5,
@@ -95,7 +97,7 @@ module.exports = {
    * survive a redeploy on ephemeral hosts, so anything deployed should use
    * firebase.
    */
-  storageDriver: (process.env.STORAGE_DRIVER || 'local').toLowerCase(),
+  storageDriver: (process.env.STORAGE_DRIVER || "local").toLowerCase(),
 
   /**
    * Storefront cache invalidation. Both must be set for the call to happen;
@@ -116,7 +118,9 @@ module.exports = {
      * real newline would end the value. Turning them back into newlines here is
      * the single most common cause of "invalid PEM" errors when this is missed.
      */
-    privateKey: normalisePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
+    privateKey: normalisePrivateKey(
+      process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    ),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   },
 
@@ -128,8 +132,10 @@ module.exports = {
      */
     apiKey: process.env.BREVO_API_KEY,
     fromEmail: process.env.EMAIL_FROM_ADDRESS,
-    fromName: process.env.EMAIL_FROM_NAME || 'SA Toys',
+    fromName: process.env.EMAIL_FROM_NAME || "SA Toys",
     /** Email is optional in dev — flows degrade to logging the OTP. */
-    enabled: Boolean(process.env.BREVO_API_KEY && process.env.EMAIL_FROM_ADDRESS),
+    enabled: Boolean(
+      process.env.BREVO_API_KEY && process.env.EMAIL_FROM_ADDRESS,
+    ),
   },
 };
