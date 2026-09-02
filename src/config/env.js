@@ -51,6 +51,20 @@ function normalisePrivateKey(raw) {
     (key.startsWith("'") && key.endsWith("'"));
   if (quoted) key = key.slice(1, -1);
 
+  // Base64-encoded whole key. The most reliable way to get a PEM through a
+  // dashboard text field intact — plain alphanumeric text has nothing left
+  // for the field's own storage/transit layer to mangle. Detected by the
+  // absence of the PEM header, which every other accepted form has.
+  if (!key.includes("-----BEGIN")) {
+    try {
+      const decoded = Buffer.from(key, "base64").toString("utf8");
+      if (decoded.includes("-----BEGIN")) key = decoded;
+    } catch {
+      // Not valid base64 either — fall through and let the caller's own
+      // BEGIN/END check below report it clearly, rather than swallowing it.
+    }
+  }
+
   // Escaped newlines back to real ones. A no-op when they are already real.
   key = key.replace(/\\n/g, "\n");
 
@@ -118,9 +132,7 @@ module.exports = {
      * real newline would end the value. Turning them back into newlines here is
      * the single most common cause of "invalid PEM" errors when this is missed.
      */
-    privateKey: normalisePrivateKey(
-      process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ),
+    privateKey: normalisePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   },
 
