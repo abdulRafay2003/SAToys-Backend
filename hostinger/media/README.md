@@ -32,9 +32,11 @@ deployments. The driver refuses to start if `MEDIA_ROOT` points inside the app.
    (If `satoys.store` DNS isn't managed by Hostinger, add an `A` record
    `media → <hosting IP shown in hPanel>` at your DNS provider.)
 2. **Security → SSL** for `media.satoys.store`; turn on **Force HTTPS**.
-3. **File Manager** → that `public_html`: upload `public_html/.htaccess` from this folder.
-   It blocks script execution and directory listings, sets year-long caching and
-   `nosniff`, and sandboxes SVGs. Show hidden files to confirm it's there.
+3. Nothing to upload: on startup the `hostinger` driver installs `public_html/.htaccess` from
+   this folder into `MEDIA_ROOT` (it blocks script execution and directory listings, sets
+   year-long caching and `nosniff`, and sandboxes SVGs), and keeps it in sync on later deploys.
+   It only replaces a file it wrote itself. If hPanel created its own `.htaccess` there, the
+   log says so, and you should delete that file so the managed one can be installed.
 4. Find the **absolute path** of that folder. File Manager shows it, or over SSH run
    `cd ~/domains/media.satoys.store/public_html && pwd`. It looks like
    `/home/u123456789/domains/media.satoys.store/public_html`.

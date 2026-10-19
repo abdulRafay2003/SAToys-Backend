@@ -73,9 +73,52 @@ function init() {
     throw new Error(`MEDIA_PUBLIC_URL is not a valid URL: ${publicUrl}`);
   }
 
+  installHtaccess(resolved);
+
   root = resolved;
   logger.info('Hostinger storage ready', { root, publicUrl });
   return root;
+}
+
+/**
+ * The media site's .htaccess — no script execution, no listings, long cache,
+ * nosniff, sandboxed SVG — is versioned in this repo and installed from here,
+ * so the server copy can never drift from the reviewed one and nobody has to
+ * paste it into File Manager.
+ *
+ * Only a file this code wrote (it carries the marker line) is ever replaced. A
+ * hand-made .htaccess is left alone and reported, rather than overwritten.
+ */
+const HTACCESS_SOURCE = path.join(__dirname, '..', '..', '..', 'hostinger', 'media', 'public_html', '.htaccess');
+const HTACCESS_MARKER = '# Managed by the SA Toys API (src/services/storage/hostinger.js) — edits here are overwritten.';
+
+function installHtaccess(dir) {
+  let wanted;
+  try {
+    wanted = `${HTACCESS_MARKER}\n${fsSync.readFileSync(HTACCESS_SOURCE, 'utf8')}`;
+  } catch (error) {
+    logger.warn('Media .htaccess template missing — not installed', { message: error.message });
+    return;
+  }
+
+  const target = path.join(dir, '.htaccess');
+  let current = null;
+  try {
+    current = fsSync.readFileSync(target, 'utf8');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+
+  if (current === wanted) return;
+  if (current !== null && !current.startsWith(HTACCESS_MARKER)) {
+    logger.warn('Media root has its own .htaccess — left untouched; compare it with hostinger/media/public_html/.htaccess', {
+      target,
+    });
+    return;
+  }
+
+  fsSync.writeFileSync(target, wanted, { mode: 0o644 });
+  logger.info(current === null ? 'Installed media .htaccess' : 'Updated media .htaccess', { target });
 }
 
 /**
