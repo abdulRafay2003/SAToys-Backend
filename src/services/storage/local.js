@@ -11,7 +11,7 @@ const { publicUrl } = require('../../config/env');
  *
  * It is *not* suitable for ephemeral hosting (Render, Railway, Fly, Heroku,
  * most container platforms): the filesystem is wiped on every deploy, so
- * uploaded images would disappear. Use the Firebase driver there.
+ * uploaded images would disappear. Use the hostinger driver there.
  */
 
 const ROOT = path.join(__dirname, '..', '..', '..', 'uploads');

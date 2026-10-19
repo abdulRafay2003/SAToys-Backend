@@ -11,8 +11,8 @@ const storage = require('../services/storage');
  * that pointed at the old location.
  *
  *   npm run migrate:media -- --dry-run          # report only, nothing written
- *   npm run migrate:media                       # Firebase → STORAGE_DRIVER
- *   npm run migrate:media -- --from=local       # ./uploads → STORAGE_DRIVER
+ *   npm run migrate:media                       # ./uploads → STORAGE_DRIVER
+ *   npm run migrate:media -- --from=firebase    # retired, see parseFirebaseUrl
  *   npm run migrate:media -- --only=products    # one collection
  *
  * Switching STORAGE_DRIVER only changes where *new* uploads go. Records created
@@ -24,7 +24,7 @@ const storage = require('../services/storage');
  *
  * Safe to re-run: URLs already on the target are not matched, a file uploaded
  * by an interrupted earlier run is detected rather than duplicated, and the
- * source files are never deleted (that is Phase 5, by hand, after checking).
+ * source files are never deleted.
  */
 
 /** Collections whose documents can contain media URLs. */
@@ -67,7 +67,12 @@ const CONCURRENCY = 4;
 // --- Source URL recognition ----------------------------------------------------
 
 /**
- * Firebase serves the same object at two URL shapes: the download-token form
+ * The Firebase bucket is retired: everything was migrated to media.satoys.store
+ * on 2026-10-19, the project is back on the Spark plan (every download now
+ * returns 402) and the driver is gone. This source is kept only so the history
+ * of that run stays readable and a stray old URL is still recognised.
+ *
+ * Firebase served the same object at two URL shapes: the download-token form
  * the driver stored, and the plain GCS form `list()` falls back to.
  *   https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<encoded key>?alt=media&token=…
  *   https://storage.googleapis.com/<bucket>/<key>
@@ -258,9 +263,9 @@ async function eachLimited(items, limit, fn) {
  *   file that now exists on the target — used to keep an old→new URL record
  *   so a run can be reversed.
  */
-async function migrate(db, { from = 'firebase', dryRun = false, only = null, log = console.log, onCopied = null } = {}) {
+async function migrate(db, { from = 'local', dryRun = false, only = null, log = console.log, onCopied = null } = {}) {
   const source = SOURCES[from];
-  if (!source) throw new Error(`Unknown --from "${from}" (use firebase or local)`);
+  if (!source) throw new Error(`Unknown --from "${from}" (use local or firebase)`);
 
   const stats = { planned: 0, copied: 0, alreadyThere: 0, missing: [], failed: [], documents: 0, byCollection: {} };
   const copy = makeCopier({ source, dryRun, stats, onCopied });
@@ -297,7 +302,7 @@ async function migrate(db, { from = 'firebase', dryRun = false, only = null, log
 }
 
 function parseArgs(argv) {
-  const args = { from: 'firebase', dryRun: false, only: null };
+  const args = { from: 'local', dryRun: false, only: null };
   for (const arg of argv) {
     if (arg === '--dry-run') args.dryRun = true;
     else if (arg.startsWith('--from=')) args.from = arg.slice(7);

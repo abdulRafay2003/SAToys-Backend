@@ -66,8 +66,8 @@ app.use(
 );
 
 /**
- * Uploaded media, served only by the local driver — with Firebase the URLs
- * point at Cloud Storage and nothing is served from this process. Immutable
+ * Uploaded media, served only by the local driver — with the Hostinger drivers
+ * the URLs point at media.satoys.store and nothing is served from this process. Immutable
  * because filenames are content-unique.
  */
 if (storage.name === 'local') {

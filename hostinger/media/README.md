@@ -86,17 +86,14 @@ file hash, with a 5-minute window; folder allowlist; a strict filename pattern; 
 vs. sniffed-MIME check; size caps; no overwrites. No script can execute in the media tree
 except `_upload/index.php`.
 
-## Moving existing Firebase media
+## Moving existing media
 
-Once uploads work, copy the old files across and rewrite their URLs:
+Product media was moved from Firebase Storage to this site on 2026-10-19 by the
+API's boot-time migration (`MEDIA_MIGRATE_ON_BOOT`, see `HOSTINGER_STORAGE_PLAN.md` →
+Phase 4). Firebase is retired; the same tooling still moves files left on a local
+`./uploads` folder:
 
 ```bash
 npm run migrate:media -- --dry-run   # what would move, nothing written
 npm run migrate:media                # copy + rewrite (re-runnable)
 ```
-
-In production there is no shell on the box, so let the API run it: set
-`MEDIA_MIGRATE_ON_BOOT=firebase` on api.satoys.store, redeploy, read the runtime log
-(`Media migration finished …`), then remove the variable. Firebase must be readable
-(Blaze plan) while it runs. Details are in `HOSTINGER_STORAGE_PLAN.md` → Phase 4.
-Firebase files are never deleted.

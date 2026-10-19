@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
  *
  * The controller knows nothing about where files land — it hands buffers to the
  * storage service and returns whatever URL comes back. Switching between local
- * disk, Hostinger and Firebase is an environment variable, not a code change.
+ * disk and the Hostinger media site is an environment variable, not a code change.
  */
 
 async function store(file, folder) {

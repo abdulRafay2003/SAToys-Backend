@@ -10,9 +10,12 @@ const { revalidateTags, TAGS } = require('./revalidate');
  * box, which only this process can reach — there is no shell to run the
  * script from. So the API runs it itself, at boot, when asked:
  *
- *   MEDIA_MIGRATE_ON_BOOT=firebase           copy Firebase files, rewrite URLs
- *   MEDIA_MIGRATE_ON_BOOT=firebase-dry-run   report only, nothing written
- *   MEDIA_MIGRATE_ON_BOOT=local              the same, from ./uploads
+ *   MEDIA_MIGRATE_ON_BOOT=local              copy ./uploads files, rewrite URLs
+ *   MEDIA_MIGRATE_ON_BOOT=local-dry-run      report only, nothing written
+ *
+ * The `firebase` modes did the 2026-10-19 move off Firebase Storage. That
+ * bucket is retired (Spark plan, downloads return 402), so they would now
+ * only report every file as missing.
  *
  * Set the variable, redeploy, read the runtime log, remove the variable.
  *

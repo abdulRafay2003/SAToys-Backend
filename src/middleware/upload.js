@@ -7,9 +7,9 @@ const storage = require('../services/storage');
  * Multipart parsing only — the bytes are held in memory and handed to the
  * storage service, which decides where they actually go.
  *
- * Memory rather than disk because the Firebase driver needs a buffer, and
- * writing to disk first only to re-read and upload would be a pointless round
- * trip. The file-size limit below is what keeps memory bounded: at the default
+ * Memory rather than disk because the drivers take a buffer (hostinger-http
+ * POSTs it, hostinger writes it atomically via a temp file), and writing to
+ * disk first only to re-read it would be a pointless round trip. The file-size limit below is what keeps memory bounded: at the default
  * 5MB x 12 files, a single request tops out at 60MB.
  */
 

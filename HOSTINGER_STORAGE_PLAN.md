@@ -1,14 +1,15 @@
 # Plan — Replace Firebase Storage with Hostinger
 
-Status: **Phases 1–2 and the Phase 4 script implemented (uncommitted); Phase 3 switch, the Phase 4 run, and Phase 5 pending.**
-Hosting (confirmed by the owner): the API runs as a **Hostinger Node.js web app** on the
-Unlimited plan, in the same account that will hold the media. The repo's `render.yaml`,
-`.github/workflows/keep-alive.yml` and the Render parts of `DEPLOY.md` are leftovers from an
-earlier Render deployment.
+Status: **Complete.** Phases 1–4 done in production on 2026-10-19 (`STORAGE_DRIVER=hostinger`,
+every media URL migrated to `https://media.satoys.store`, no Firebase links left in public data).
+Phase 5 done in code the same day: the Firebase driver, `firebase-admin` and all `FIREBASE_*`
+config are gone. Remaining by hand: delete the Firebase bucket/project (see Phase 5).
+Hosting: the API, storefront and admin run as **Hostinger Node.js web apps** on the Unlimited
+plan, in the same account that holds the media.
 
 ---
 
-## 1. Today
+## 1. Before (until 2026-10-19)
 
 ```
 Admin ─multipart─▶ API ─Admin SDK─▶ Firebase Cloud Storage  → https://firebasestorage.googleapis.com/…
@@ -55,10 +56,10 @@ uploaded file off the shop's and admin's origins.
 - Not done (optional): disk-buffered video uploads. Multer still holds a ≤ 50 MB video in RAM.
 
 ### Phase 2 — Storefront ✅ done
-- `Toys-Web/next.config.ts` allows `MEDIA_PUBLIC_URL`'s host (default `media.satoys.store`). Firebase hosts stay allowed until migration is done.
+- `Toys-Web/next.config.ts` allows `MEDIA_PUBLIC_URL`'s host (default `media.satoys.store`). The Firebase hosts were removed in Phase 5.
 - **Deploy the storefront before Phase 3**, otherwise `next/image` rejects the new host.
 
-### Phase 3 — Production switch (owner, in hPanel; ~20 min)
+### Phase 3 — Production switch ✅ done 2026-10-19
 1. Add website `media.satoys.store` as an **empty PHP/HTML site** (not a subdomain folder inside a Node app's `public_html`). SSL + Force HTTPS.
 2. Upload `hostinger/media/public_html/.htaccess` into its `public_html`.
 3. API app → Environment variables: `STORAGE_DRIVER=hostinger`, `MEDIA_ROOT=<absolute path of that public_html>`, `MEDIA_PUBLIC_URL=https://media.satoys.store`.
@@ -67,7 +68,7 @@ uploaded file off the shop's and admin's origins.
 6. If boot reports **not writable**: use `hostinger-http` instead (README → Fallback).
 7. Upload a ~45 MB video once. Hostinger's proxy body limit for Node apps isn't documented, so this confirms the real ceiling.
 
-### Phase 4 — Migrate existing Firebase files (script ✅ done; run pending)
+### Phase 4 — Migrate existing Firebase files ✅ done 2026-10-19
 `src/scripts/migrateMedia.js` (`npm run migrate:media`; it replaces `migrateImages.js`, and `migrate:images` now runs it with `--from=local`):
 - Recognises both Firebase URL shapes (`firebasestorage.googleapis.com/v0/b/<bucket>/o/<key>` and `storage.googleapis.com/<bucket>/<key>`) anywhere in documents of products, categories, brands, collections, banners, homesections, blogposts, testimonials, settings and **orders** (line-item image snapshots).
 - Downloads each file once (shared URLs are deduplicated), saves it through the active driver with the **same folder/filename** (unknown folders → `misc`; non-standard names get a fresh generated name), then `$set`s only the changed top-level fields.
@@ -87,14 +88,15 @@ Safety built in:
 - The storefront cache is purged automatically when documents change.
 - The CLI (`npm run migrate:media`) still works wherever the target driver is reachable, e.g. with `hostinger-http`.
 
-Afterwards, spot-check the storefront and admin, then downgrade Firebase.
+Result: the run finished with no Firebase links left in public data; `MEDIA_MIGRATE_ON_BOOT` was removed and Firebase downgraded back to Spark.
 
-### Phase 5 — Remove Firebase (after 1–2 quiet weeks)
-- Delete `storage/firebase.js` and the `firebase-admin` dependency, the `firebase` block and `normalisePrivateKey()` in `env.js`, and the `FIREBASE_*` vars in `.env.example` and hPanel.
-- Remove the Firebase hosts from `Toys-Web/next.config.ts`.
-- Update `STORAGE.md`, `DEPLOY.md` and the `PROJECT_CONTEXT.md` files.
-- Back up, then delete the Firebase bucket (this stops Blaze billing).
-- Separately, decide whether to delete the Render leftovers (`render.yaml`, `keep-alive.yml`).
+### Phase 5 — Remove Firebase ✅ done in code 2026-10-19
+- ✅ Deleted `storage/firebase.js` and the `firebase-admin` dependency, the `firebase` block and `normalisePrivateKey()` in `env.js`, and the `FIREBASE_*` vars in `.env.example`.
+- ✅ Removed the Firebase hosts from `Toys-Web/next.config.ts`.
+- ✅ Rewrote `STORAGE.md` and `DEPLOY.md`; updated the `PROJECT_CONTEXT.md` files.
+- `migrateMedia.js` keeps its Firebase URL parser (harmless; documents the run) but defaults to `--from=local`.
+- ✅ Deleted the Render leftovers `render.yaml` and `.github/workflows/keep-alive.yml`.
+- **Owner, by hand:** remove any `FIREBASE_*` variables still set in hPanel, then, once confident, back up and delete the Firebase bucket/project. It is on the Spark plan, so the files are unreadable (402) but not deleted.
 
 ## 5. Risks
 
@@ -104,4 +106,4 @@ Afterwards, spot-check the storefront and admin, then downgrade Firebase.
 | Node process not permitted to write to another site's folder | Boot check names it. Switch to `hostinger-http` |
 | Orphaned files (removing an image in the admin doesn't delete the file) | Later: a cleanup script comparing folder listings against DB references. 600k-inode budget |
 | Large videos vs. proxy limits / RAM | Phase 3 step 7. Optional disk-buffered multer |
-| Rollback | Until Phase 5, set `STORAGE_DRIVER=firebase` again |
+| Rollback | No longer possible to Firebase (driver removed). `mediamigrationmap` holds every old→new URL if the rewrite ever needs auditing |

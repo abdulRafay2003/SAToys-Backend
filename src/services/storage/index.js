@@ -15,7 +15,6 @@ const drivers = {
   local: require('./local'),
   hostinger: require('./hostinger'),
   'hostinger-http': require('./hostinger-http'),
-  firebase: require('./firebase'),
 };
 
 const driver = drivers[storageDriver] || drivers.local;

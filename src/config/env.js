@@ -24,53 +24,6 @@ if (process.env.JWT_SECRET.length < 32) {
 const toList = (value, fallback) =>
   (value ? value.split(",") : fallback).map((s) => s.trim()).filter(Boolean);
 
-/**
- * Accepts a service-account private key in any of the forms it arrives in.
- *
- * The same key reaches this process three different ways, and only one of them
- * needs no work:
- *
- *   • `.env` file, double-quoted — dotenv strips the quotes and expands `\n`.
- *   • Host dashboard (Render, Vercel, Fly) — the field is stored verbatim, so
- *     any quotes you pasted become *literal characters* in the value and the
- *     `\n` stays a backslash and an n. Both have to be undone here, or the PEM
- *     parser fails with `DECODER routines::unsupported`, which names neither
- *     cause.
- *   • Already-real newlines — pasted into a multi-line field. Left alone.
- *
- * Normalising all three is what makes the key survive however it was entered.
- */
-function normalisePrivateKey(raw) {
-  if (!raw) return undefined;
-
-  let key = raw.trim();
-
-  // Quotes a dashboard stored literally, rather than as string delimiters.
-  const quoted =
-    (key.startsWith('"') && key.endsWith('"')) ||
-    (key.startsWith("'") && key.endsWith("'"));
-  if (quoted) key = key.slice(1, -1);
-
-  // Base64-encoded whole key. The most reliable way to get a PEM through a
-  // dashboard text field intact — plain alphanumeric text has nothing left
-  // for the field's own storage/transit layer to mangle. Detected by the
-  // absence of the PEM header, which every other accepted form has.
-  if (!key.includes("-----BEGIN")) {
-    try {
-      const decoded = Buffer.from(key, "base64").toString("utf8");
-      if (decoded.includes("-----BEGIN")) key = decoded;
-    } catch {
-      // Not valid base64 either — fall through and let the caller's own
-      // BEGIN/END check below report it clearly, rather than swallowing it.
-    }
-  }
-
-  // Escaped newlines back to real ones. A no-op when they are already real.
-  key = key.replace(/\\n/g, "\n");
-
-  return key.trim() + "\n";
-}
-
 module.exports = {
   env: process.env.NODE_ENV || "development",
   isProd: process.env.NODE_ENV === "production",
@@ -107,12 +60,10 @@ module.exports = {
   /**
    * Where uploaded images live: 'local' (this app's ./uploads, dev only),
    * 'hostinger' (the media site's folder on the same Hostinger account),
-   * 'hostinger-http' (the same folder via its PHP receiver) or 'firebase'
-   * (Cloud Storage, being retired).
+   * or 'hostinger-http' (the same folder via its PHP receiver).
    *
-   * Defaults to local so the app runs with no credentials. Local disk does not
-   * survive a redeploy on ephemeral hosts, so anything deployed should use
-   * firebase.
+   * Defaults to local so the app runs with no credentials. Hostinger replaces
+   * the app folder on every deployment, so production uses 'hostinger'.
    */
   storageDriver: (process.env.STORAGE_DRIVER || "local").toLowerCase(),
 
@@ -141,24 +92,10 @@ module.exports = {
     publicUrl: (process.env.MEDIA_PUBLIC_URL || "").replace(/\/+$/, "") || undefined,
   },
 
-  firebase: {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    /**
-     * The service-account private key.
-     *
-     * In a .env file the key is one line with literal "\n" sequences, because a
-     * real newline would end the value. Turning them back into newlines here is
-     * the single most common cause of "invalid PEM" errors when this is missed.
-     */
-    privateKey: normalisePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  },
-
   mail: {
     /**
-     * Brevo's transactional HTTP API, not SMTP — Render (and most PaaS free
-     * tiers) block outbound SMTP ports, which made raw Gmail SMTP hang until
+     * Brevo's transactional HTTP API, not SMTP — many hosts (Render, most PaaS
+     * free tiers) block outbound SMTP ports, which made raw Gmail SMTP hang until
      * connection-timeout on every send. An HTTPS API call has no such problem.
      */
     apiKey: process.env.BREVO_API_KEY,
