@@ -13,6 +13,8 @@ const { storageDriver } = require('../../config/env');
 
 const drivers = {
   local: require('./local'),
+  hostinger: require('./hostinger'),
+  'hostinger-http': require('./hostinger-http'),
   firebase: require('./firebase'),
 };
 
@@ -27,14 +29,31 @@ const folderFor = (req) => {
 };
 
 /**
+ * Extension for each accepted upload type (the allowlists in middleware/upload.js).
+ * Taken from the type rather than the client's filename, so "photo.JPG.png"
+ * or a name with no extension still yields one the Hostinger receiver accepts.
+ */
+const EXT_FOR_MIME = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/avif': '.avif',
+  'image/gif': '.gif',
+  'image/svg+xml': '.svg',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/quicktime': '.mov',
+};
+
+/**
  * A safe, collision-free object name.
  *
  * The client's filename is never trusted: it can contain path separators, and
  * two people uploading "image.jpg" must not overwrite each other.
  */
-function safeFilename(originalName) {
+function safeFilename(originalName, mimeType) {
   const ext = path.extname(originalName || '').toLowerCase().slice(0, 10);
-  const safeExt = /^\.[a-z0-9]+$/.test(ext) ? ext : '';
+  const safeExt = EXT_FOR_MIME[mimeType] || (/^\.[a-z0-9]+$/.test(ext) ? ext : '');
   return `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${safeExt}`;
 }
 

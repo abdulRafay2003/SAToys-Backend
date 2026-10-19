@@ -9,7 +9,9 @@
     "seed:roles": "node src/scripts/seedRoles.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "smoke": "node src/scripts/smoke.js",
-    "migrate:images": "node src/scripts/migrateImages.js"
+    "migrate:images": "node src/scripts/migrateMedia.js --from=local",
+    "migrate:media": "node src/scripts/migrateMedia.js",
+    "media:check": "node src/scripts/mediaCheck.js"
   },
   "keywords": [
     "lumo",

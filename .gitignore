@@ -4,3 +4,6 @@ node_modules/
 uploads/
 logs/
 *.log
+
+# Hostinger media receiver secret (deploy-only, never commit)
+hostinger/media/media-config.php

@@ -1,0 +1,54 @@
+# SA Toys media root — https://media.satoys.store
+#
+# Everything here is uploaded catalogue media, served as static files. Nothing
+# in this tree may execute: the only script is /_upload/index.php, whose own
+# .htaccess re-allows it. Hostinger runs LiteSpeed, which honours these Apache
+# directives.
+
+Options -Indexes
+
+# No server-side scripts anywhere in the media tree.
+<FilesMatch "\.(php\d?|phtml|phar|pht|cgi|pl|py|sh|asp|aspx|jsp)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Dotfiles: in-progress uploads (.tmp-*) and this file itself.
+<FilesMatch "^\.">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_mime.c>
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType image/svg+xml .svg
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
+  AddType video/quicktime .mov
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  # Filenames are unique per upload and never overwritten, so they can be
+  # cached for a year. Replacing an image in the admin produces a new URL.
+  Header set Cache-Control "public, max-age=31536000, immutable"
+  # The storefront and admin embed these from other origins.
+  Header set Cross-Origin-Resource-Policy "cross-origin"
+
+  # An SVG can carry script. Sandboxing it means opening one directly cannot
+  # run anything, and the separate subdomain keeps it off the shop's origin.
+  <FilesMatch "\.svg$">
+    Header set Content-Security-Policy "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox"
+  </FilesMatch>
+</IfModule>

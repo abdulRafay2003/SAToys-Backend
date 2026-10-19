@@ -105,7 +105,10 @@ module.exports = {
   },
 
   /**
-   * Where uploaded images live: 'local' (disk) or 'firebase' (Cloud Storage).
+   * Where uploaded images live: 'local' (this app's ./uploads, dev only),
+   * 'hostinger' (the media site's folder on the same Hostinger account),
+   * 'hostinger-http' (the same folder via its PHP receiver) or 'firebase'
+   * (Cloud Storage, being retired).
    *
    * Defaults to local so the app runs with no credentials. Local disk does not
    * survive a redeploy on ephemeral hosts, so anything deployed should use
@@ -120,6 +123,22 @@ module.exports = {
   revalidate: {
     url: process.env.STOREFRONT_REVALIDATE_URL,
     secret: process.env.REVALIDATE_SECRET,
+  },
+
+  /**
+   * Hostinger media site. Files are served from `publicUrl` either way; how
+   * they get there depends on the driver (see hostinger/media/README.md):
+   *   • STORAGE_DRIVER=hostinger      — written straight to `root` on disk
+   *   • STORAGE_DRIVER=hostinger-http — POSTed to the PHP receiver at
+   *     `uploadUrl`, signed with `secret`
+   */
+  media: {
+    /** Absolute path to the media site's web root, e.g. /home/u123/domains/media.satoys.store/public_html */
+    root: process.env.MEDIA_ROOT,
+    uploadUrl: process.env.MEDIA_UPLOAD_URL,
+    secret: process.env.MEDIA_UPLOAD_SECRET,
+    // Trailing slashes stripped so `${publicUrl}/${key}` never doubles one.
+    publicUrl: (process.env.MEDIA_PUBLIC_URL || "").replace(/\/+$/, "") || undefined,
   },
 
   firebase: {

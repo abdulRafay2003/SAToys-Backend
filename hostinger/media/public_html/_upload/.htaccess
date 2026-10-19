@@ -1,0 +1,19 @@
+# The receiver. The media root denies every script; this re-allows exactly one.
+
+DirectoryIndex index.php
+
+<FilesMatch "^index\.php$">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Allow from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  # API responses, not media — override the parent's year-long cache.
+  Header set Cache-Control "no-store"
+  Header unset Cross-Origin-Resource-Policy
+</IfModule>

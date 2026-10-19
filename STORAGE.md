@@ -13,7 +13,9 @@ string, so switching providers is an environment variable.
 | `STORAGE_DRIVER` | Where files go | Use it when |
 |---|---|---|
 | `local` (default) | `./uploads`, served from `/uploads` by this API | Development, or a VPS with a persistent disk |
-| `firebase` | Firebase Cloud Storage | Anything deployed to Render, Railway, Fly, Heroku, Vercel, Cloud Run |
+| `hostinger` | Written straight into the media site's web root (`MEDIA_ROOT`) on the same Hostinger account; served from `MEDIA_PUBLIC_URL` | **Production** — the API runs as a Hostinger Node.js app. Set-up in [hostinger/media/README.md](./hostinger/media/README.md), verify with `npm run media:check` |
+| `hostinger-http` | The same folder, via the signed PHP receiver at `MEDIA_UPLOAD_URL` | Fallback if the Node app cannot write to `MEDIA_ROOT`, or the API ever runs off Hostinger |
+| `firebase` | Firebase Cloud Storage | Being retired — kept only until existing images are migrated (see HOSTINGER_STORAGE_PLAN.md) |
 
 **Local disk does not survive a redeploy on ephemeral hosts.** The container
 filesystem is rebuilt each time, so uploaded product photos would silently

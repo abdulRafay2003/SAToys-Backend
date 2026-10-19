@@ -9,18 +9,31 @@ const logger = require('../utils/logger');
  *
  * The controller knows nothing about where files land — it hands buffers to the
  * storage service and returns whatever URL comes back. Switching between local
- * disk and Firebase is an environment variable, not a code change.
+ * disk, Hostinger and Firebase is an environment variable, not a code change.
  */
 
 async function store(file, folder) {
-  const filename = storage.safeFilename(file.originalname);
+  const filename = storage.safeFilename(file.originalname, file.mimetype);
 
-  const { url, key } = await storage.save({
-    folder,
-    filename,
-    buffer: file.buffer,
-    mimeType: file.mimetype,
-  });
+  let saved;
+  try {
+    saved = await storage.save({
+      folder,
+      filename,
+      buffer: file.buffer,
+      mimeType: file.mimetype,
+    });
+  } catch (error) {
+    // A remote store refusing the file (too large for the host, content that
+    // does not match its type) is the admin's to fix, so it is reported as
+    // such rather than collapsing into a generic 500. A 401 is not in this
+    // list: a rejected signature is a server misconfiguration, not the admin's.
+    if (error.status === 400 || error.status === 413) {
+      throw new ApiError(error.status, error.message, { code: 'UPLOAD_REJECTED' });
+    }
+    throw error;
+  }
+  const { url, key } = saved;
 
   return {
     url,
