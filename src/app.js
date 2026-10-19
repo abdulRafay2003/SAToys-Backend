@@ -82,8 +82,17 @@ if (storage.name === 'local') {
     }),
   );
 } else {
-  // Fail at boot rather than on the first upload if credentials are missing.
-  storage.init();
+  /**
+   * Check storage at boot so a misconfiguration is in the log immediately —
+   * but don't let it take the API down. The catalogue, checkout and accounts
+   * do not depend on uploads; a wrong MEDIA_ROOT should break the upload
+   * button, not the shop. Each upload retries init and reports the same error.
+   */
+  try {
+    storage.init();
+  } catch (error) {
+    logger.error(`Storage driver "${storage.name}" is not usable — uploads will fail: ${error.message}`);
+  }
 }
 
 app.get('/api/health', (req, res) =>
