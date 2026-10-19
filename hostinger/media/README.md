@@ -95,6 +95,8 @@ npm run migrate:media -- --dry-run   # what would move, nothing written
 npm run migrate:media                # copy + rewrite (re-runnable)
 ```
 
-Run it where the production env is available (`MONGODB_URI`, `STORAGE_DRIVER=hostinger`,
-`MEDIA_ROOT`, `MEDIA_PUBLIC_URL`). Details, and the cache purge that follows, are in
-`HOSTINGER_STORAGE_PLAN.md` → Phase 4. Firebase files are never deleted by the script.
+In production there is no shell on the box, so let the API run it: set
+`MEDIA_MIGRATE_ON_BOOT=firebase` on api.satoys.store, redeploy, read the runtime log
+(`Media migration finished …`), then remove the variable. Firebase must be readable
+(Blaze plan) while it runs. Details are in `HOSTINGER_STORAGE_PLAN.md` → Phase 4.
+Firebase files are never deleted.

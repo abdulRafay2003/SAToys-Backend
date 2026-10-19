@@ -154,7 +154,7 @@ function destinationFor(parsed, contentType) {
  * Copies one source URL to the target. Shared files (the same photo on a
  * product and in an old order) are copied once: the promise is cached by URL.
  */
-function makeCopier({ source, dryRun, stats }) {
+function makeCopier({ source, dryRun, stats, onCopied }) {
   const cache = new Map();
 
   return (sourceUrl, parsed) => {
@@ -179,6 +179,7 @@ function makeCopier({ source, dryRun, stats }) {
       try {
         const saved = await storage.save({ ...dest, buffer: file.buffer });
         stats.copied += 1;
+        if (onCopied) await onCopied(sourceUrl, saved.url);
         return saved;
       } catch (error) {
         // An earlier interrupted run already stored this exact name, but did
@@ -186,7 +187,9 @@ function makeCopier({ source, dryRun, stats }) {
         if (error.status === 409) {
           stats.alreadyThere += 1;
           const key = `${dest.folder}/${dest.filename}`;
-          return { url: `${media.publicUrl}/${key}`, key };
+          const url = `${media.publicUrl}/${key}`;
+          if (onCopied) await onCopied(sourceUrl, url);
+          return { url, key };
         }
         stats.failed.push({ url: sourceUrl, reason: error.message });
         return null;
@@ -250,12 +253,17 @@ async function eachLimited(items, limit, fn) {
  * The migration proper, against anything shaped like a Mongo `Db` — so it can
  * be exercised without a database.
  */
-async function migrate(db, { from = 'firebase', dryRun = false, only = null, log = console.log } = {}) {
+/**
+ * @param {object}   [opts.onCopied] - called with (sourceUrl, newUrl) for every
+ *   file that now exists on the target — used to keep an old→new URL record
+ *   so a run can be reversed.
+ */
+async function migrate(db, { from = 'firebase', dryRun = false, only = null, log = console.log, onCopied = null } = {}) {
   const source = SOURCES[from];
   if (!source) throw new Error(`Unknown --from "${from}" (use firebase or local)`);
 
   const stats = { planned: 0, copied: 0, alreadyThere: 0, missing: [], failed: [], documents: 0, byCollection: {} };
-  const copy = makeCopier({ source, dryRun, stats });
+  const copy = makeCopier({ source, dryRun, stats, onCopied });
 
   for (const name of only ? [only] : COLLECTIONS) {
     const collection = db.collection(name);

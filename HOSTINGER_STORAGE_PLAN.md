@@ -74,16 +74,20 @@ uploaded file off the shop's and admin's origins.
 - `--dry-run` reports only. `--only=<collection>` limits the run. If an earlier interrupted run already stored a file, the script reuses it. Source files that are gone (404/403) are reported and their URLs left unchanged. Failures leave URLs unchanged and set exit code 2, so re-running retries them.
 - Never deletes Firebase files.
 
-How to run it in production:
-1. Take an Atlas snapshot or `mongodump` first.
-2. On the Hostinger box (SSH, in the app folder, with the production env: `MONGODB_URI`, `STORAGE_DRIVER=hostinger`, `MEDIA_ROOT`, `MEDIA_PUBLIC_URL`):
-   ```bash
-   npm run migrate:media -- --dry-run
-   npm run migrate:media
-   ```
-   If `node` isn't available over SSH, run it from your machine with `STORAGE_DRIVER=hostinger-http` and the receiver deployed (README → Fallback). The result is the same files in the same folder.
-3. Purge the storefront cache: `POST https://www.satoys.store/api/revalidate` with header `x-revalidate-secret` and body `{"tags":["products","categories","brands","collections","reviews","content","nav","settings","home","banners"]}`.
-4. Spot-check the storefront and admin. Then search Mongo for any remaining `firebasestorage` URLs (the dry run should report 0 planned, apart from known-missing files).
+How to run it in production. The files must be written on the Hostinger box, so the API runs the migration itself (`src/services/mediaMigrationJob.js`):
+1. Firebase Storage must be readable. A Spark-plan project returns **402** for every file, so upgrade it to Blaze for the duration.
+2. On api.satoys.store, add the env var `MEDIA_MIGRATE_ON_BOOT=firebase` (or `firebase-dry-run` to report only) and redeploy.
+3. Watch the runtime log for `Media migration started` … `Media migration finished {copied, documents, missing, failed}`. The shop keeps serving throughout.
+4. **Remove `MEDIA_MIGRATE_ON_BOOT`** and redeploy. A completed run with no failures is skipped anyway, but the variable shouldn't linger.
+
+Safety built in:
+- A lock document in `jobs` (`_id: media-migration`) stops concurrent runs. Stale locks are taken over after 30 min.
+- Every old→new URL is recorded in `mediamigrationmap`, so the rewrite can be reversed.
+- Failures leave URLs unchanged, and a rerun retries them.
+- The storefront cache is purged automatically when documents change.
+- The CLI (`npm run migrate:media`) still works wherever the target driver is reachable, e.g. with `hostinger-http`.
+
+Afterwards, spot-check the storefront and admin, then downgrade Firebase.
 
 ### Phase 5 — Remove Firebase (after 1–2 quiet weeks)
 - Delete `storage/firebase.js` and the `firebase-admin` dependency, the `firebase` block and `normalisePrivateKey()` in `env.js`, and the `FIREBASE_*` vars in `.env.example` and hPanel.

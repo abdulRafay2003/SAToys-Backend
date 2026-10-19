@@ -13,6 +13,8 @@ let server;
   server = app.listen(port, () => {
     logger.info(`LUMO API listening on :${port} (${env})`);
     logger.info(`Docs at http://localhost:${port}/api/docs`);
+    // One-off media migration, only when MEDIA_MIGRATE_ON_BOOT is set.
+    require('./src/services/mediaMigrationJob').maybeRunMigrationOnBoot();
   });
 })();
 
